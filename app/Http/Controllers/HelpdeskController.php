@@ -14,6 +14,30 @@ use Inertia\Inertia;
 class HelpdeskController extends Controller
 {
     /**
+     * Update the status of a conversation.
+     */
+    public function updateStatus(Request $request, Conversation $conversation)
+    {
+        // Validate the request
+        $validated = $request->validate([
+            'status' => 'required|in:open,pending,closed',
+        ]);
+        
+        // Update the conversation status
+        $conversation->status = $validated['status'];
+        $conversation->last_activity_at = now();
+        $conversation->save();
+        
+        // For Inertia requests, return a redirect response
+        if ($request->wantsJson()) {
+            return redirect()->back()
+                ->with('success', 'Status updated successfully');
+        }
+        
+        return back()->with('success', 'Status updated successfully');
+    }
+    
+    /**
      * Store a new message for a conversation.
      */
     public function storeMessage(Request $request, Conversation $conversation)
@@ -37,8 +61,9 @@ class HelpdeskController extends Controller
         $conversation->last_activity_at = now();
         $conversation->save();
         
-        // Return the created message as a DTO
-        return response()->json([
+        // Return a redirect response for Inertia
+        return redirect()->back()->with([
+            'success' => 'Message sent successfully',
             'message' => MessageData::fromModel($message),
         ]);
     }
@@ -53,23 +78,8 @@ class HelpdeskController extends Controller
             ->orderBy('last_activity_at', 'desc')
             ->paginate(20);
         
-        // Transform conversations to data objects
-        $conversationData = collect($conversations->items())->map(function ($conversation) {
-            return [
-                'id' => $conversation->id,
-                'subject' => $conversation->subject,
-                'status' => $conversation->status,
-                'priority' => $conversation->priority,
-                'contact' => [
-                    'id' => $conversation->contact->id,
-                    'name' => $conversation->contact->name,
-                    'email' => $conversation->contact->email,
-                    'company' => $conversation->contact->company,
-                ],
-                'last_activity_at' => $conversation->last_activity_at,
-                'created_at' => $conversation->created_at,
-            ];
-        });
+        // Transform conversations to data objects using spatie/laravel-data
+        $conversationDataCollection = ConversationData::collect($conversations->items());
         
         // Get all messages grouped by conversation
         $messages = [];
@@ -78,12 +88,12 @@ class HelpdeskController extends Controller
                 ->orderBy('created_at')
                 ->get();
             
-            $messages[$conversation->id] = MessageData::collection($conversationMessages);
+            $messages[$conversation->id] = MessageData::collect($conversationMessages);
         }
         
         return Inertia::render('helpdesk/Index', [
             'conversations' => [
-                'data' => $conversationData,
+                'data' => $conversationDataCollection,
                 'links' => $conversations->linkCollection(),
                 'meta' => [
                     'current_page' => $conversations->currentPage(),
@@ -109,7 +119,7 @@ class HelpdeskController extends Controller
         
         return Inertia::render('helpdesk/Show', [
             'conversation' => ConversationData::from($conversation),
-            'messages' => MessageData::collection($conversation->messages),
+            'messages' => MessageData::collect($conversation->messages),
         ]);
     }
 }

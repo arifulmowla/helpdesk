@@ -54,11 +54,17 @@ const props = defineProps<{
   };
 }>();
 
-// Message type labels
+// Message type labels with agent info
 const messageTypeLabels = {
   customer: 'Customer',
-  support: 'Support',
-  internal: 'Internal Note'
+  support: 'Support (You)',
+  internal: 'Internal Note (You)'
+};
+
+// In a real app, this would come from auth().user() or similar
+const currentAgent = {
+  name: 'You',
+  id: '1'
 };
 
 // Format date to relative time (e.g., "2 hours ago")

@@ -3,6 +3,7 @@
 namespace App\Data;
 
 use App\Models\Conversation;
+use Illuminate\Support\Collection;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Lazy;
 use Spatie\TypeScriptTransformer\Attributes\TypeScript;
@@ -25,10 +26,10 @@ class ConversationData extends Data
     public static function fromModel(Conversation $conversation): self
     {
         return new self(
-            id: $conversation->id,
-            subject: $conversation->subject,
-            status: $conversation->status,
-            priority: $conversation->priority,
+            id: $conversation->getKey(),
+            subject: $conversation->getAttribute('subject'),
+            status: $conversation->getAttribute('status'),
+            priority: $conversation->getAttribute('priority'),
             last_activity_at: $conversation->last_activity_at?->format('Y-m-d H:i:s'),
             created_at: $conversation->created_at->format('Y-m-d H:i:s'),
             contact: ContactData::fromModel($conversation->contact),

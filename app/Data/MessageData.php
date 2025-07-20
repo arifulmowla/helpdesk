@@ -30,17 +30,4 @@ class MessageData extends Data
             created_at: $message->created_at->format('Y-m-d H:i:s'),
         );
     }
-    
-    /**
-     * Create a collection of MessageData from a collection of Message models.
-     *
-     * @param Collection $messages
-     * @return array
-     */
-    public static function collection(Collection $messages): array
-    {
-        return $messages->map(function (Message $message) {
-            return self::fromModel($message);
-        })->toArray();
-    }
 }

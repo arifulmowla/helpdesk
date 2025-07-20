@@ -8,15 +8,16 @@ Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
-Route::get('dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::middleware(['auth:web', 'verified'])->group(function () {
+    Route::get('/dashboard', fn () => Inertia::render('Dashboard'))->name('dashboard');
 
-// Helpdesk routes
-Route::prefix('helpdesk')->name('helpdesk.')->middleware(['auth'])->group(function () {
-    Route::get('/', [HelpdeskController::class, 'index'])->name('index');
-    Route::get('/{conversation}', [HelpdeskController::class, 'show'])->name('show');
-    Route::post('/{conversation}/messages', [HelpdeskController::class, 'storeMessage'])->name('messages.store');
+    // Helpdesk routes
+    Route::prefix('helpdesk')->group(function () {
+        Route::get('/', [HelpdeskController::class, 'index'])->name('helpdesk.index');
+        Route::get('/{conversation}', [HelpdeskController::class, 'show'])->name('helpdesk.show');
+        Route::post('/{conversation}/messages', [HelpdeskController::class, 'storeMessage'])->name('helpdesk.messages.store');
+        Route::patch('/{conversation}/status', [HelpdeskController::class, 'updateStatus'])->name('helpdesk.status.update');
+    });
 });
 
 require __DIR__.'/settings.php';

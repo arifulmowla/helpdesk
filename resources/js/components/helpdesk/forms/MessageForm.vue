@@ -53,6 +53,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { Button } from '@/components/ui/button';
+import { router } from '@inertiajs/vue3';
 
 // Define props
 const props = defineProps<{
@@ -89,34 +90,29 @@ async function submitMessage() {
   if (!content.value.trim()) return;
   
   try {
-    // Send to API
-    const response = await fetch(`/helpdesk/${props.conversationId}/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-      },
-      body: JSON.stringify({
-        type: messageType.value,
-        content: content.value,
-      }),
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to send message');
-    }
-    
-    const data = await response.json();
-    
-    // Emit event with the created message
-    emit('sent', {
+    // Use Inertia router instead of fetch
+    router.post(`/helpdesk/${props.conversationId}/messages`, {
       type: messageType.value,
       content: content.value,
-      conversation_id: props.conversationId
+    }, {
+      preserveScroll: true,
+      preserveState: true,
+      onSuccess: (response) => {
+        // Emit event with the created message
+        emit('sent', {
+          type: messageType.value,
+          content: content.value,
+          conversation_id: props.conversationId
+        });
+        
+        // Reset form
+        content.value = '';
+      },
+      onError: (errors) => {
+        console.error('Error sending message:', errors);
+        // You could add error handling UI here
+      }
     });
-    
-    // Reset form
-    content.value = '';
   } catch (error) {
     console.error('Error sending message:', error);
     // You could add error handling UI here

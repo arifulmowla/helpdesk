@@ -44,10 +44,18 @@
                 <PriorityBadge :priority="activeConversation.priority" />
               </div>
             </div>
+            <!-- Status change controls -->
+            <div class="mt-3">
+              <StatusChangeForm 
+                :conversation-id="activeConversation.id" 
+                :initial-status="activeConversation.status"
+                @status-changed="handleStatusChanged"
+              />
+            </div>
           </div>
           
           <!-- Messages -->
-          <div class="flex-1 overflow-y-auto p-4 space-y-4">
+          <div ref="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
             <MessageBubble 
               v-for="message in activeConversationMessages" 
               :key="message.id"
@@ -67,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import { Button } from '@/components/ui/button';
 import AppShell from '@/components/AppShell.vue';
 import ConversationListItem from '@/components/helpdesk/ConversationListItem.vue';
@@ -75,6 +83,7 @@ import MessageBubble from '@/components/helpdesk/MessageBubble.vue';
 import StatusBadge from '@/components/helpdesk/StatusBadge.vue';
 import PriorityBadge from '@/components/helpdesk/PriorityBadge.vue';
 import MessageForm from '@/components/helpdesk/forms/MessageForm.vue';
+import StatusChangeForm from '@/components/helpdesk/forms/StatusChangeForm.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 
 // Define props
@@ -108,11 +117,36 @@ const props = defineProps<{
 
 // State
 const activeConversation = ref(props.conversations.data[0] || null);
+const messagesContainer = ref<HTMLElement | null>(null);
 
 // Computed
 const activeConversationMessages = computed(() => {
   if (!activeConversation.value) return [];
   return props.messages[activeConversation.value.id] || [];
+});
+
+// Scroll to bottom of messages when messages change or conversation changes
+function scrollToBottom() {
+  nextTick(() => {
+    if (messagesContainer.value) {
+      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+    }
+  });
+}
+
+// Watch for changes in messages and scroll to bottom
+watch(() => activeConversationMessages.value.length, () => {
+  scrollToBottom();
+});
+
+// Watch for changes in active conversation and scroll to bottom
+watch(() => activeConversation.value?.id, () => {
+  scrollToBottom();
+});
+
+// Scroll to bottom on initial mount
+onMounted(() => {
+  scrollToBottom();
 });
 
 // Methods
@@ -152,5 +186,26 @@ function handleMessageSent(messageData: {
   }
   
   // In a production app, we would also update the conversation list to show the latest activity
+}
+
+// Handle status change
+function handleStatusChanged(data: {
+  status: 'open' | 'pending' | 'closed';
+  conversation_id: string;
+}) {
+  console.log('Status changed:', data);
+  
+  // Update the active conversation's status
+  if (activeConversation.value && activeConversation.value.id === data.conversation_id) {
+    activeConversation.value.status = data.status;
+    activeConversation.value.last_activity_at = new Date().toISOString();
+  }
+  
+  // Update the conversation in the list
+  const conversationIndex = props.conversations.data.findIndex(c => c.id === data.conversation_id);
+  if (conversationIndex !== -1) {
+    props.conversations.data[conversationIndex].status = data.status;
+    props.conversations.data[conversationIndex].last_activity_at = new Date().toISOString();
+  }
 }
 </script>
