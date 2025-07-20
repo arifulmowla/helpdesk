@@ -33,7 +33,7 @@ class ConversationData extends Data
             last_activity_at: $conversation->last_activity_at?->format('Y-m-d H:i:s'),
             created_at: $conversation->created_at->format('Y-m-d H:i:s'),
             contact: ContactData::fromModel($conversation->contact),
-            messages: Lazy::whenLoaded('messages', $conversation, fn () => MessageData::collection($conversation->messages)),
+            messages: Lazy::whenLoaded('messages', $conversation, fn () => MessageData::collect($conversation->messages)),
         );
     }
 }

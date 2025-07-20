@@ -122,4 +122,22 @@ class HelpdeskController extends Controller
             'messages' => MessageData::collect($conversation->messages),
         ]);
     }
+    
+    /**
+     * Get messages for a specific conversation.
+     */
+    public function getMessages(Conversation $conversation)
+    {
+        // Load the conversation with its contact and messages
+        $conversation->load('contact', 'messages');
+        
+        // Transform messages to data objects using spatie/laravel-data
+        $messageData = MessageData::collect($conversation->messages);
+        
+        // Return Inertia response with conversation and messages as props
+        return Inertia::render('helpdesk/Show', [
+            'conversation' => ConversationData::from($conversation),
+            'messages' => $messageData,
+        ]);
+    }
 }

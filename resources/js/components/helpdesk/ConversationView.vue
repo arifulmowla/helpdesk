@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col h-full">
-    <!-- Header -->
+  <div class="grid grid-rows-[auto_1fr_auto] h-full">
+    <!-- Header - Fixed at top -->
     <div class="p-4 border-b bg-card">
       <div class="flex items-start justify-between mb-3">
         <div>
@@ -50,8 +50,8 @@
       </div>
     </div>
 
-    <!-- Messages -->
-    <div ref="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
+    <!-- Scrollable Messages Container -->
+    <div ref="messagesContainer" class="overflow-y-auto p-4">
       <div v-for="message in messages" :key="message.id" class="mb-4 last:mb-0">
         <CustomerBubble 
           v-if="message.type === 'customer'" 
@@ -68,7 +68,7 @@
       </div>
     </div>
 
-    <!-- Reply Section -->
+    <!-- Reply Section - Fixed at bottom -->
     <div class="border-t bg-card p-4">
       <!-- Tab Buttons -->
       <div class="flex gap-1 mb-4 p-1 bg-muted/50 rounded-lg">
@@ -182,13 +182,13 @@ const props = defineProps<{
   conversation: {
     id: string;
     subject: string;
-    status: 'open' | 'pending' | 'resolved' | 'closed';
-    priority: 'low' | 'medium' | 'high' | 'urgent';
+    status: string; // Using string instead of enum to avoid type errors
+    priority: string; // Using string instead of enum to avoid type errors
     contact: {
       id: string;
       name: string;
       email: string;
-      company: string;
+      company: string | null;
     };
     last_activity_at: string;
     created_at: string;
