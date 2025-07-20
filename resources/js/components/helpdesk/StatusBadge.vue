@@ -13,14 +13,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-// Define props
-const props = defineProps<{
-  status: 'open' | 'pending' | 'closed';
-  size?: 'sm' | 'md';
-}>();
-
-// Default props
-withDefaults(defineProps<{
+// Define props with defaults
+const props = withDefaults(defineProps<{
   status: 'open' | 'pending' | 'closed';
   size?: 'sm' | 'md';
 }>(), {

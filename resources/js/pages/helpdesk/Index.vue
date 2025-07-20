@@ -1,5 +1,5 @@
 <template>
-  <AppShell>
+  <AppLayout>
     <div class="flex h-full">
       <!-- Sidebar with conversation list -->
       <div class="w-80 border-r border-gray-200 h-full overflow-hidden flex flex-col">
@@ -63,7 +63,7 @@
         </template>
       </div>
     </div>
-  </AppShell>
+  </AppLayout>
 </template>
 
 <script setup lang="ts">
@@ -75,6 +75,7 @@ import MessageBubble from '@/components/helpdesk/MessageBubble.vue';
 import StatusBadge from '@/components/helpdesk/StatusBadge.vue';
 import PriorityBadge from '@/components/helpdesk/PriorityBadge.vue';
 import MessageForm from '@/components/helpdesk/forms/MessageForm.vue';
+import AppLayout from '@/layouts/AppLayout.vue';
 
 // Define props
 const props = defineProps<{
