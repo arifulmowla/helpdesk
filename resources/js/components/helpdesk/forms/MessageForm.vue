@@ -5,16 +5,7 @@
         size="sm" 
         variant="outline" 
         class="text-xs"
-        :class="{ 'bg-blue-50 border-blue-300': messageType === 'customer' }"
-        @click="setMessageType('customer')"
-      >
-        Customer Reply
-      </Button>
-      <Button 
-        size="sm" 
-        variant="outline" 
-        class="text-xs"
-        :class="{ 'bg-blue-50 border-blue-300': messageType === 'internal' }"
+        :class="{ 'bg-amber-100 border-amber-200 hover:bg-amber-100': messageType === 'internal' }"
         @click="setMessageType('internal')"
       >
         Internal Note
@@ -23,7 +14,7 @@
         size="sm" 
         variant="outline" 
         class="text-xs"
-        :class="{ 'bg-blue-50 border-blue-300': messageType === 'support' }"
+        :class="{ 'bg-zinc-50 border-zinc-300': messageType === 'support' }"
         @click="setMessageType('support')"
       >
         Support Reply
@@ -33,15 +24,14 @@
     <form @submit.prevent="submitMessage">
       <textarea
         v-model="content"
-        class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="w-full border border-zinc-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-zinc-400"
         rows="3"
         :placeholder="placeholderText"
       ></textarea>
       
       <div class="flex justify-between mt-2">
         <div class="text-sm text-gray-500">
-          <span v-if="messageType === 'customer'">Sending as customer</span>
-          <span v-else-if="messageType === 'internal'" class="text-blue-600">Internal note (only visible to staff)</span>
+          <span v-if="messageType === 'internal'" class="text-indigo-600">Internal note (only visible to staff)</span>
           <span v-else>Sending as support</span>
         </div>
         <Button type="submit" :disabled="!content.trim()">Send</Button>

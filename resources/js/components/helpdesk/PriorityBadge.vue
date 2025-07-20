@@ -28,10 +28,10 @@ const priorityLabels = {
   high: 'High'
 };
 
-// Priority classes for styling
+// Priority classes for styling with updated color palette
 const priorityClasses = {
-  low: 'bg-blue-100 text-blue-800',
-  medium: 'bg-orange-100 text-orange-800',
-  high: 'bg-red-100 text-red-800'
+  low: 'bg-sky-50 text-sky-700 border border-sky-200',
+  medium: 'bg-violet-50 text-violet-700 border border-violet-200',
+  high: 'bg-rose-50 text-rose-700 border border-rose-200'
 };
 </script>

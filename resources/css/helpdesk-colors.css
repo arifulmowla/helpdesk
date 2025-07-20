@@ -1,0 +1,19 @@
+:root {
+  /* Generic color palette */
+  /* Neutral colors (used for customer messages) */
+  --neutral-fg: 240 9% 9%;
+  --neutral-bg: 240 10% 96%;
+  --neutral-border: 240 10% 90%;
+  
+  /* Primary colors (used for support messages) */
+  --primary-fg: 200 50% 25%;
+  --primary-bg: 200 100% 97%;
+  --primary-border: 200 70% 90%;
+  
+  /* Secondary colors (used for internal notes) */
+  --secondary-fg: 45 60% 30%;
+  --secondary-bg: 45 100% 96%;
+  --secondary-border: 45 70% 85%;
+}
+
+/* Note: Utility classes are defined in tailwind.config.ts */

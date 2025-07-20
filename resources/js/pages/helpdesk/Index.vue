@@ -28,45 +28,12 @@
           Select a conversation to view details
         </div>
         <template v-else>
-          <!-- Conversation header -->
-          <div class="p-4 border-b border-gray-200">
-            <div class="flex items-center justify-between">
-              <div>
-                <h2 class="text-lg font-semibold">{{ activeConversation.subject }}</h2>
-                <div class="flex items-center text-sm text-gray-500 mt-1">
-                  <span>{{ activeConversation.contact.name }}</span>
-                  <span class="mx-2">•</span>
-                  <span>{{ activeConversation.contact.email }}</span>
-                </div>
-              </div>
-              <div class="flex items-center space-x-2">
-                <StatusBadge :status="activeConversation.status" />
-                <PriorityBadge :priority="activeConversation.priority" />
-              </div>
-            </div>
-            <!-- Status change controls -->
-            <div class="mt-3">
-              <StatusChangeForm 
-                :conversation-id="activeConversation.id" 
-                :initial-status="activeConversation.status"
-                @status-changed="handleStatusChanged"
-              />
-            </div>
-          </div>
-          
-          <!-- Messages -->
-          <div ref="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
-            <MessageBubble 
-              v-for="message in activeConversationMessages" 
-              :key="message.id"
-              :message="message"
-            />
-          </div>
-          
-          <!-- Message input -->
-          <MessageForm 
-            :conversation-id="activeConversation.id" 
-            @sent="handleMessageSent"
+          <ConversationView 
+            :conversation="activeConversation" 
+            :messages="activeConversationMessages" 
+            @message-sent="handleMessageSent"
+            @status-updated="handleStatusChanged"
+            @priority-updated="handlePriorityChanged"
           />
         </template>
       </div>
@@ -79,11 +46,9 @@ import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import { Button } from '@/components/ui/button';
 import AppShell from '@/components/AppShell.vue';
 import ConversationListItem from '@/components/helpdesk/ConversationListItem.vue';
-import MessageBubble from '@/components/helpdesk/MessageBubble.vue';
+import ConversationView from '@/components/helpdesk/ConversationView.vue';
 import StatusBadge from '@/components/helpdesk/StatusBadge.vue';
 import PriorityBadge from '@/components/helpdesk/PriorityBadge.vue';
-import MessageForm from '@/components/helpdesk/forms/MessageForm.vue';
-import StatusChangeForm from '@/components/helpdesk/forms/StatusChangeForm.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 
 // Define props
@@ -92,8 +57,8 @@ const props = defineProps<{
     data: Array<{
       id: string;
       subject: string;
-      status: 'open' | 'pending' | 'closed';
-      priority: 'low' | 'medium' | 'high';
+      status: 'open' | 'pending' | 'closed' | 'resolved';
+      priority: 'low' | 'medium' | 'high' | 'urgent';
       contact: {
         id: string;
         name: string;
@@ -190,21 +155,42 @@ function handleMessageSent(messageData: {
 
 // Handle status change
 function handleStatusChanged(data: {
-  status: 'open' | 'pending' | 'closed';
+  status: string;
   conversation_id: string;
 }) {
   console.log('Status changed:', data);
   
   // Update the active conversation's status
   if (activeConversation.value && activeConversation.value.id === data.conversation_id) {
-    activeConversation.value.status = data.status;
+    activeConversation.value.status = data.status as 'open' | 'pending' | 'closed' | 'resolved';
     activeConversation.value.last_activity_at = new Date().toISOString();
   }
   
   // Update the conversation in the list
   const conversationIndex = props.conversations.data.findIndex(c => c.id === data.conversation_id);
   if (conversationIndex !== -1) {
-    props.conversations.data[conversationIndex].status = data.status;
+    props.conversations.data[conversationIndex].status = data.status as 'open' | 'pending' | 'closed' | 'resolved';
+    props.conversations.data[conversationIndex].last_activity_at = new Date().toISOString();
+  }
+}
+
+// Handle priority change
+function handlePriorityChanged(data: {
+  priority: string;
+  conversation_id: string;
+}) {
+  console.log('Priority changed:', data);
+  
+  // Update the active conversation's priority
+  if (activeConversation.value && activeConversation.value.id === data.conversation_id) {
+    activeConversation.value.priority = data.priority as 'low' | 'medium' | 'high' | 'urgent';
+    activeConversation.value.last_activity_at = new Date().toISOString();
+  }
+  
+  // Update the conversation in the list
+  const conversationIndex = props.conversations.data.findIndex(c => c.id === data.conversation_id);
+  if (conversationIndex !== -1) {
+    props.conversations.data[conversationIndex].priority = data.priority as 'low' | 'medium' | 'high' | 'urgent';
     props.conversations.data[conversationIndex].last_activity_at = new Date().toISOString();
   }
 }

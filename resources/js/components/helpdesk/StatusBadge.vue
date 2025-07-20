@@ -28,10 +28,10 @@ const statusLabels = {
   closed: 'Closed'
 };
 
-// Status classes for styling
+// Status classes for styling with updated color palette
 const statusClasses = {
-  open: 'bg-green-100 text-green-800',
-  pending: 'bg-yellow-100 text-yellow-800',
-  closed: 'bg-gray-100 text-gray-800'
+  open: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+  pending: 'bg-amber-50 text-amber-700 border border-amber-200',
+  closed: 'bg-zinc-100 text-zinc-700 border border-zinc-200'
 };
 </script>
