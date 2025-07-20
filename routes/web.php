@@ -15,7 +15,7 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
     Route::prefix('helpdesk')->group(function () {
         Route::get('/', [HelpdeskController::class, 'index'])->name('helpdesk.index');
         Route::get('/{conversation}', [HelpdeskController::class, 'show'])->name('helpdesk.show');
-        Route::get('/conversations/{conversation}/messages', [HelpdeskController::class, 'getMessages'])->name('helpdesk.messages.index');
+        // Route for messages is now handled by the show method
         Route::post('/{conversation}/messages', [HelpdeskController::class, 'storeMessage'])->name('helpdesk.messages.store');
         Route::patch('/{conversation}/status', [HelpdeskController::class, 'updateStatus'])->name('helpdesk.status.update');
     });

@@ -17,13 +17,14 @@ const props = withDefaults(
 )
 const emits = defineEmits<DropdownMenuContentEmits>()
 
+// Create a reactive reference to props directly, excluding the class property
 const delegatedProps = computed(() => {
   const { class: _, ...delegated } = props
-
   return delegated
 })
 
-const forwarded = useForwardPropsEmits(delegatedProps, emits)
+// Use the value of the computed property, not the computed ref itself
+const forwarded = useForwardPropsEmits(delegatedProps.value, emits)
 </script>
 
 <template>

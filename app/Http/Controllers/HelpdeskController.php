@@ -117,27 +117,32 @@ class HelpdeskController extends Controller
         // Load the conversation with its contact and messages
         $conversation->load('contact', 'messages');
         
+        // Get all conversations for the sidebar
+        $allConversations = Conversation::with('contact')
+            ->orderBy('last_activity_at', 'desc')
+            ->paginate(20);
+        
+        // Transform conversations to data objects
+        $conversationDataCollection = ConversationData::collect($allConversations->items());
+        
         return Inertia::render('helpdesk/Show', [
             'conversation' => ConversationData::from($conversation),
             'messages' => MessageData::collect($conversation->messages),
+            'conversations' => [
+                'data' => $conversationDataCollection,
+                'links' => $allConversations->linkCollection(),
+                'meta' => [
+                    'current_page' => $allConversations->currentPage(),
+                    'from' => $allConversations->firstItem(),
+                    'last_page' => $allConversations->lastPage(),
+                    'per_page' => $allConversations->perPage(),
+                    'to' => $allConversations->lastItem(),
+                    'total' => $allConversations->total(),
+                ],
+            ],
         ]);
     }
     
-    /**
-     * Get messages for a specific conversation.
-     */
-    public function getMessages(Conversation $conversation)
-    {
-        // Load the conversation with its contact and messages
-        $conversation->load('contact', 'messages');
-        
-        // Transform messages to data objects using spatie/laravel-data
-        $messageData = MessageData::collect($conversation->messages);
-        
-        // Return Inertia response with conversation and messages as props
-        return Inertia::render('helpdesk/Show', [
-            'conversation' => ConversationData::from($conversation),
-            'messages' => $messageData,
-        ]);
-    }
+    // The getMessages method has been removed as it duplicated the show method functionality.
+    // All routes now use the show method for displaying conversation details and messages.
 }

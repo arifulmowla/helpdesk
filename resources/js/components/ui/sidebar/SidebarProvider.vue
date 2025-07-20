@@ -14,6 +14,12 @@ const props = withDefaults(defineProps<{
   open: undefined,
 })
 
+// Read the cookie on component mount to restore sidebar state
+const getCookieValue = (name: string): boolean | null => {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
+  return match ? match[2] === 'true' : null
+}
+
 const emits = defineEmits<{
   'update:open': [open: boolean]
 }>()
@@ -21,8 +27,11 @@ const emits = defineEmits<{
 const isMobile = useMediaQuery('(max-width: 768px)')
 const openMobile = ref(false)
 
+// Initialize open state from cookie or props
+const initialState = getCookieValue(SIDEBAR_COOKIE_NAME) ?? props.defaultOpen ?? false
+
 const open = useVModel(props, 'open', emits, {
-  defaultValue: props.defaultOpen ?? false,
+  defaultValue: initialState,
   passive: (props.open === undefined) as false,
 }) as Ref<boolean>
 
@@ -72,7 +81,7 @@ provideSidebarContext({
         '--sidebar-width': SIDEBAR_WIDTH,
         '--sidebar-width-icon': SIDEBAR_WIDTH_ICON,
       }"
-      :class="cn('group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full', props.class)"
+      :class="cn('group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full transition-opacity duration-300', props.class)"
       v-bind="$attrs"
     >
       <slot />

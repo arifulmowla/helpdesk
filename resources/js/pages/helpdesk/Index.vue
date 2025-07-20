@@ -95,7 +95,8 @@ const selectConversation = (conversation: Conversation) => {
 const fetchMessages = () => {
   if (!activeConversation.value) return;
   
-  router.get(`/helpdesk/conversations/${activeConversation.value.id}/messages`, {}, {
+  // Use the show route instead of the removed messages route
+  router.get(`/helpdesk/${activeConversation.value.id}`, {}, {
     preserveState: true,
     preserveScroll: true,
     only: ['messages'],

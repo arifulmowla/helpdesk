@@ -9,24 +9,50 @@
       </div>
     </template>
 
-    <div class="h-full">
-      <ConversationView 
-        :conversation="conversation" 
-        :messages="messages" 
-        @message-sent="handleMessageSent"
-        @status-updated="handleStatusUpdated"
-        @priority-updated="handlePriorityUpdated"
-      />
+    <div class="flex h-full">
+      <!-- Sidebar with conversation list -->
+      <div class="w-80 border-r border-gray-200 h-full grid grid-rows-[auto_1fr]">
+        <div class="p-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold">Conversations</h2>
+        </div>
+        <div class="overflow-y-auto">
+          <div v-if="conversations.data.length === 0" class="p-4 text-center text-gray-500">
+            No conversations yet
+          </div>
+          <div v-else>
+            <ConversationListItem 
+              v-for="conv in conversations.data" 
+              :key="conv.id"
+              :conversation="conv"
+              :is-active="conversation.id === conv.id"
+              @click="navigateToConversation(conv)"
+            />
+          </div>
+        </div>
+      </div>
+      
+      <!-- Main content area with conversation details -->
+      <div class="flex-1 h-full flex flex-col overflow-hidden">
+        <ConversationView 
+          class="h-full flex flex-col overflow-hidden"
+          :conversation="conversation" 
+          :messages="messages" 
+          @message-sent="handleMessageSent"
+          @status-updated="handleStatusUpdated"
+          @priority-updated="handlePriorityUpdated"
+        />
+      </div>
     </div>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import Breadcrumb from '@/components/ui/breadcrumb/Breadcrumb.vue';
 import ConversationView from '@/components/helpdesk/ConversationView.vue';
+import ConversationListItem from '@/components/helpdesk/ConversationListItem.vue';
 
 // Define props
 const props = defineProps<{
@@ -51,7 +77,37 @@ const props = defineProps<{
     content: string;
     created_at: string;
   }>;
+  conversations: {
+    data: Array<{
+      id: string;
+      subject: string;
+      status: string;
+      priority: string;
+      contact: {
+        id: string;
+        name: string;
+        email: string;
+        company: string | null;
+      };
+      last_activity_at: string;
+      created_at: string;
+    }>;
+    links: any;
+    meta: {
+      current_page: number;
+      from: number;
+      last_page: number;
+      per_page: number;
+      to: number;
+      total: number;
+    };
+  };
 }>();
+
+// Function to navigate to a conversation
+function navigateToConversation(conversation: any) {
+  router.visit(`/helpdesk/${conversation.id}`);
+}
 
 // Event handlers
 function handleMessageSent(data: { type: string; content: string; conversation_id: string }) {
