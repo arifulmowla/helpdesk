@@ -1,7 +1,7 @@
 <template>
-  <div class="grid grid-rows-[auto_1fr_auto] h-full">
+  <div class="flex flex-col h-full">
     <!-- Header - Fixed at top -->
-    <div class="p-4 border-b bg-card">
+    <div class="p-4 border-b bg-card shrink-0">
       <div class="flex items-start justify-between mb-3">
         <div>
           <h1 class="text-xl font-semibold mb-1">{{ conversation.subject }}</h1>
@@ -51,7 +51,7 @@
     </div>
 
     <!-- Scrollable Messages Container -->
-    <div ref="messagesContainer" class="overflow-y-auto p-4">
+    <div ref="messagesContainer" class="flex-1 overflow-y-auto p-4">
       <div v-for="message in messages" :key="message.id" class="mb-4 last:mb-0">
         <CustomerBubble 
           v-if="message.type === 'customer'" 
@@ -69,7 +69,7 @@
     </div>
 
     <!-- Reply Section - Fixed at bottom -->
-    <div class="border-t bg-card p-4">
+    <div class="border-t bg-card p-4 shrink-0 sticky bottom-0">
       <!-- Tab Buttons -->
       <div class="flex gap-1 mb-4 p-1 bg-muted/50 rounded-lg">
         <button

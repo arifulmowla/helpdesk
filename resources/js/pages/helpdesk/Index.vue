@@ -2,11 +2,11 @@
   <AppLayout>
     <div class="flex h-full">
       <!-- Sidebar with conversation list -->
-      <div class="w-80 border-r border-gray-200 h-full grid grid-rows-[auto_1fr]">
-        <div class="p-4 border-b border-gray-200">
+      <div class="w-80 border-r border-gray-200 h-full flex flex-col overflow-hidden">
+        <div class="p-4 border-b border-gray-200 shrink-0">
           <h2 class="text-lg font-semibold">Conversations</h2>
         </div>
-        <div class="overflow-y-auto">
+        <div class="overflow-y-auto flex-1">
           <div v-if="conversations.data.length === 0" class="p-4 text-center text-gray-500">
             No conversations yet
           </div>
@@ -23,13 +23,13 @@
       </div>
       
       <!-- Main content area with conversation details -->
-      <div class="flex-1 h-full flex flex-col overflow-hidden">
+      <div class="flex-1 h-full overflow-hidden">
         <div v-if="!activeConversation" class="flex items-center justify-center h-full text-gray-500">
           Select a conversation to view details
         </div>
         <template v-else>
           <ConversationView 
-            class="h-full flex flex-col overflow-hidden"
+            class="h-full"
             :conversation="activeConversation" 
             :messages="activeConversationMessages" 
             @message-sent="fetchMessages"
