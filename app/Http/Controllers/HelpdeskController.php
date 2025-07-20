@@ -69,80 +69,36 @@ class HelpdeskController extends Controller
     }
     
     /**
-     * Display the helpdesk index page with conversations.
+     * Display the helpdesk with conversations and messages.
+     * If no conversation ID is provided, it shows the first conversation or an empty state.
      */
-    public function index()
+    public function index(Conversation $conversation = null)
     {
-        // Get paginated conversations with their contacts
-        $conversations = Conversation::with('contact')
-            ->orderBy('last_activity_at', 'desc')
-            ->paginate(20);
-        
-        // Transform conversations to data objects using spatie/laravel-data
-        $conversationDataCollection = ConversationData::collect($conversations->items());
-        
-        // Get all messages grouped by conversation
-        $messages = [];
-        foreach ($conversations->items() as $conversation) {
-            $conversationMessages = Message::where('conversation_id', $conversation->id)
-                ->orderBy('created_at')
-                ->get();
-            
-            $messages[$conversation->id] = MessageData::collect($conversationMessages);
-        }
-        
-        return Inertia::render('helpdesk/Index', [
-            'conversations' => [
-                'data' => $conversationDataCollection,
-                'links' => $conversations->linkCollection(),
-                'meta' => [
-                    'current_page' => $conversations->currentPage(),
-                    'from' => $conversations->firstItem(),
-                    'last_page' => $conversations->lastPage(),
-                    'path' => $conversations->path(),
-                    'per_page' => $conversations->perPage(),
-                    'to' => $conversations->lastItem(),
-                    'total' => $conversations->total(),
-                ],
-            ],
-            'messages' => $messages,
-        ]);
-    }
-    
-    /**
-     * Display a specific conversation.
-     */
-    public function show(Conversation $conversation)
-    {
-        // Load the conversation with its contact and messages
-        $conversation->load('contact', 'messages');
-        
         // Get all conversations for the sidebar
         $allConversations = Conversation::with('contact')
             ->orderBy('last_activity_at', 'desc')
             ->paginate(20);
         
-        // Transform conversations to data objects
-        $conversationDataCollection = ConversationData::collect($allConversations->items());
+        // If no specific conversation was requested, try to get the first one
+        if ($conversation === null || !$conversation->exists) {
+            $conversation = Conversation::orderBy('last_activity_at', 'desc')->first();
+        }
+        
+        // Prepare the conversation data and messages if a conversation exists
+        $conversationData = null;
+        $messages = [];
+        
+        if ($conversation) {
+            // Load the conversation with its contact and messages
+            $conversation->load('contact', 'messages');
+            $conversationData = ConversationData::from($conversation);
+            $messages = MessageData::collect($conversation->messages);
+        }
         
         return Inertia::render('helpdesk/Show', [
-            'conversation' => ConversationData::from($conversation),
-            'messages' => MessageData::collect($conversation->messages),
-            'conversations' => [
-                'data' => $conversationDataCollection,
-                'links' => $allConversations->linkCollection(),
-                'meta' => [
-                    'current_page' => $allConversations->currentPage(),
-                    'from' => $allConversations->firstItem(),
-                    'last_page' => $allConversations->lastPage(),
-                    'per_page' => $allConversations->perPage(),
-                    'to' => $allConversations->lastItem(),
-                    'total' => $allConversations->total(),
-                ],
-            ],
+            'conversation' => $conversationData,
+            'messages' => $messages,
+            'conversations' => ConversationData::collect($allConversations),
         ]);
     }
-    
-    // The getMessages method has been removed as it duplicated the show method functionality.
-    // All routes now use the show method for displaying conversation details and messages.
 }

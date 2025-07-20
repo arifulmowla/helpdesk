@@ -51,7 +51,7 @@
     </div>
 
     <!-- Scrollable Messages Container -->
-    <div ref="messagesContainer" class="flex-1 overflow-y-auto p-4">
+    <div ref="messagesContainer" class="flex-1 overflow-y-auto p-4 max-h-[calc(100vh-250px)]">
       <div v-for="message in messages" :key="message.id" class="mb-4 last:mb-0">
         <CustomerBubble 
           v-if="message.type === 'customer'" 
@@ -69,7 +69,7 @@
     </div>
 
     <!-- Reply Section - Fixed at bottom -->
-    <div class="border-t bg-card p-4 shrink-0 sticky bottom-0">
+    <div class="border-t bg-card p-4 shrink-0 sticky bottom-0 z-10">
       <!-- Tab Buttons -->
       <div class="flex gap-1 mb-4 p-1 bg-muted/50 rounded-lg">
         <button
