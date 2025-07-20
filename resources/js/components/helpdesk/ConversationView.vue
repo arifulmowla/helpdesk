@@ -70,77 +70,138 @@
 
     <!-- Reply Section - Fixed at bottom -->
     <div class="border-t bg-card p-4 shrink-0 sticky bottom-0 z-10">
-      <!-- Tab Buttons -->
-      <div class="flex gap-1 mb-4 p-1 bg-muted/50 rounded-lg">
-        <button
-          :class="`flex items-center gap-2 flex-1 transition-all px-3 py-2 rounded-md text-sm ${
-            activeTab === 'reply' 
-              ? 'bg-primary text-primary-foreground shadow-sm' 
-              : 'hover:bg-muted text-muted-foreground'
-          }`"
-          @click="setActiveTab('reply')"
+      <!-- Toggle Button -->
+      <div class="flex justify-end mb-2">
+        <button 
+          @click="toggleFormExpanded"
+          class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          <svg v-if="isFormExpanded" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
           </svg>
-          Reply to Customer
-        </button>
-        <button
-          :class="`flex items-center gap-2 flex-1 transition-all px-3 py-2 rounded-md text-sm ${
-            activeTab === 'internal' 
-              ? 'bg-primary text-primary-foreground shadow-sm' 
-              : 'hover:bg-muted text-muted-foreground'
-          }`"
-          @click="setActiveTab('internal')"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
           </svg>
-          Internal Note
+          {{ isFormExpanded ? 'Collapse' : 'Expand' }}
         </button>
       </div>
-
-      <!-- Reply Form -->
-      <div v-if="activeTab === 'reply'" class="space-y-3">
-        <textarea
-          v-model="replyContent"
-          placeholder="Type your reply to the customer..."
-          rows="4"
-          class="w-full resize-none border-2 focus:border-primary/50 transition-colors rounded-md p-3"
-        ></textarea>
-        <div class="flex justify-end">
-          <button 
-            @click="handleSendReply"
-            :disabled="!replyContent.trim()"
-            class="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md disabled:opacity-50"
+      
+      <!-- Compact Form (Single Line) -->
+      <div v-if="!isFormExpanded" class="flex items-center gap-2">
+        <div class="flex-1">
+          <input 
+            :placeholder="activeTab === 'reply' ? 'Type a reply...' : 'Type an internal note...'" 
+            :value="activeTab === 'reply' ? replyContent : internalNote"
+            @input="handleInputChange"
+            class="w-full border-2 rounded-md px-3 py-2 text-sm focus:outline-none"
+            :class="activeTab === 'reply' ? 'focus:border-primary/50' : 'border-secondary/40 focus:border-secondary/60'"
+          />
+        </div>
+        <div class="flex items-center gap-1">
+          <button
+            :class="`flex items-center gap-1 transition-all px-2 py-1 rounded-md text-xs ${
+              activeTab === 'reply' 
+                ? 'bg-primary text-primary-foreground shadow-sm' 
+                : 'bg-muted/50 hover:bg-muted text-muted-foreground'
+            }`"
+            @click="setActiveTab('reply')"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-            Send Reply
+            Reply
+          </button>
+          <button
+            :class="`flex items-center gap-1 transition-all px-2 py-1 rounded-md text-xs ${
+              activeTab === 'internal' 
+                ? 'bg-primary text-primary-foreground shadow-sm' 
+                : 'bg-muted/50 hover:bg-muted text-muted-foreground'
+            }`"
+            @click="setActiveTab('internal')"
+          >
+            Note
+          </button>
+          <button 
+            @click="activeTab === 'reply' ? handleSendReply() : handleSendInternalNote()"
+            :disabled="activeTab === 'reply' ? !replyContent.trim() : !internalNote.trim()"
+            class="flex items-center px-3 py-1 bg-primary text-primary-foreground rounded-md text-xs disabled:opacity-50"
+          >
+            Send
           </button>
         </div>
       </div>
 
-      <!-- Internal Note Form -->
-      <div v-if="activeTab === 'internal'" class="space-y-3">
-        <textarea
-          v-model="internalNote"
-          placeholder="Add an internal note (only visible to your team)..."
-          rows="4"
-          class="w-full resize-none border-2 border-secondary/40 focus:border-secondary/60 transition-colors rounded-md p-3"
-        ></textarea>
-        <div class="flex justify-end">
-          <button 
-            @click="handleSendInternalNote"
-            :disabled="!internalNote.trim()"
-            class="flex items-center gap-2 px-4 py-2 border border-secondary/60 text-secondary-foreground rounded-md disabled:opacity-50"
+      <!-- Expanded Form -->
+      <div v-if="isFormExpanded">
+        <!-- Tab Buttons -->
+        <div class="flex gap-1 mb-4 p-1 bg-muted/50 rounded-lg">
+          <button
+            :class="`flex items-center gap-2 flex-1 transition-all px-3 py-2 rounded-md text-sm ${
+              activeTab === 'reply' 
+                ? 'bg-primary text-primary-foreground shadow-sm' 
+                : 'hover:bg-muted text-muted-foreground'
+            }`"
+            @click="setActiveTab('reply')"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            Reply to Customer
+          </button>
+          <button
+            :class="`flex items-center gap-2 flex-1 transition-all px-3 py-2 rounded-md text-sm ${
+              activeTab === 'internal' 
+                ? 'bg-primary text-primary-foreground shadow-sm' 
+                : 'hover:bg-muted text-muted-foreground'
+            }`"
+            @click="setActiveTab('internal')"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
-            Add Internal Note
+            Internal Note
           </button>
+        </div>
+
+        <!-- Reply Form -->
+        <div v-if="activeTab === 'reply'" class="space-y-3">
+          <textarea
+            v-model="replyContent"
+            placeholder="Type your reply to the customer..."
+            rows="4"
+            class="w-full resize-none border-2 focus:border-primary/50 transition-colors rounded-md p-3"
+          ></textarea>
+          <div class="flex justify-end">
+            <button 
+              @click="handleSendReply"
+              :disabled="!replyContent.trim()"
+              class="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md disabled:opacity-50"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+              Send Reply
+            </button>
+          </div>
+        </div>
+
+        <!-- Internal Note Form -->
+        <div v-if="activeTab === 'internal'" class="space-y-3">
+          <textarea
+            v-model="internalNote"
+            placeholder="Add an internal note (only visible to your team)..."
+            rows="4"
+            class="w-full resize-none border-2 border-secondary/40 focus:border-secondary/60 transition-colors rounded-md p-3"
+          ></textarea>
+          <div class="flex justify-end">
+            <button 
+              @click="handleSendInternalNote"
+              :disabled="!internalNote.trim()"
+              class="flex items-center gap-2 px-4 py-2 border border-secondary/60 text-secondary-foreground rounded-md disabled:opacity-50"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              Add Internal Note
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -218,6 +279,7 @@ const replyContent = ref('');
 const internalNote = ref('');
 const status = ref(props.conversation.status);
 const priority = ref(props.conversation.priority);
+const isFormExpanded = ref(true); // Default to expanded form
 
 // Methods
 function getMessageComponent(type: string) {
@@ -233,6 +295,19 @@ function getMessageComponent(type: string) {
 
 function setActiveTab(tab: 'reply' | 'internal') {
   activeTab.value = tab;
+}
+
+function toggleFormExpanded() {
+  isFormExpanded.value = !isFormExpanded.value;
+}
+
+function handleInputChange(e: Event) {
+  const target = e.target as HTMLInputElement;
+  if (activeTab.value === 'reply') {
+    replyContent.value = target.value;
+  } else {
+    internalNote.value = target.value;
+  }
 }
 
 function scrollToBottom() {
