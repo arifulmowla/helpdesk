@@ -209,57 +209,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted } from 'vue';
+import { ref, watch, onMounted, nextTick } from 'vue';
 import { router } from '@inertiajs/vue3';
 import CustomerBubble from './bubbles/CustomerBubble.vue';
 import AgentBubble from './bubbles/AgentBubble.vue';
 import InternalNoteBubble from './bubbles/InternalNoteBubble.vue';
+// Import generated types
+import '@/types/generated';
 
-// Define message type interfaces
-interface BaseMessage {
-  id: string;
-  conversation_id: string;
-  content: string;
-  created_at: string;
-}
-
-interface CustomerMessage extends BaseMessage {
+// Define message type interfaces with more specific types than the generated ones
+interface CustomerMessage extends App.Data.MessageData {
   type: 'customer';
   customer_name?: string;
 }
 
-interface AgentMessage extends BaseMessage {
+interface AgentMessage extends App.Data.MessageData {
   type: 'support';
   agent_name?: string;
 }
 
-interface InternalMessage extends BaseMessage {
+interface InternalMessage extends App.Data.MessageData {
   type: 'internal';
   agent_name?: string;
 }
 
 // Define props
 const props = defineProps<{
-  conversation: {
-    id: string;
-    subject: string;
-    status: string; // Using string instead of enum to avoid type errors
-    priority: string; // Using string instead of enum to avoid type errors
-    contact: {
-      id: string;
-      name: string;
-      email: string;
-      company: string | null;
-    };
-    last_activity_at: string;
-    created_at: string;
-  };
-  messages: Array<{
-    id: string;
-    conversation_id: string;
-    type: 'customer' | 'support' | 'internal';
-    content: string;
-    created_at: string;
+  conversation: App.Data.ConversationData;
+  messages: Array<App.Data.MessageData & {
     customer_name?: string;
     agent_name?: string;
   }>;

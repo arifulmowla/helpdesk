@@ -35,20 +35,8 @@ import PriorityBadge from './PriorityBadge.vue';
 
 // Define props
 const props = defineProps<{
-  conversation: {
-    id: string;
-    subject: string;
-    status: string; // Using string instead of enum to avoid type errors
-    priority: string; // Using string instead of enum to avoid type errors
-    contact: {
-      id: string;
-      name: string;
-      email: string;
-      company: string | null;
-    };
-    last_activity_at: string;
-  };
-  isActive: boolean;
+  conversation: App.Data.ConversationData;
+  isActive?: boolean;
 }>();
 
 // Define emits
@@ -57,7 +45,9 @@ defineEmits<{
 }>();
 
 // Format date to relative time (e.g., "2 hours ago")
-function formatDate(dateString: string): string {
+function formatDate(dateString: string | null): string {
+  if (!dateString) return 'No activity';
+  
   const date = new Date(dateString);
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);

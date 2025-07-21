@@ -51,47 +51,19 @@ import { ref } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import Breadcrumb from '@/components/ui/breadcrumb/Breadcrumb.vue';
-import ConversationView from '@/components/helpdesk/ConversationView.vue';
-import ConversationListItem from '@/components/helpdesk/ConversationListItem.vue';
+import ConversationView from "@/components/helpdesk/ConversationView.vue";
+import ConversationListItem from "@/components/helpdesk/ConversationListItem.vue";
+import "@/types/generated"; 
 
 // Define props
 const props = defineProps<{
-  conversation: {
-    id: string;
-    subject: string;
-    status: string;
-    priority: string;
-    contact: {
-      id: string;
-      name: string;
-      email: string;
-      company: string | null;
-    };
-    last_activity_at: string;
-    created_at: string;
-  };
-  messages: Array<{
-    id: string;
-    conversation_id: string;
-    type: 'customer' | 'support' | 'internal';
-    content: string;
-    created_at: string;
+  conversation: App.Data.ConversationData & { messages?: App.Data.MessageData[] };
+  messages: Array<App.Data.MessageData & {
+    customer_name?: string;
+    agent_name?: string;
   }>;
   conversations: {
-    data: Array<{
-      id: string;
-      subject: string;
-      status: string;
-      priority: string;
-      contact: {
-        id: string;
-        name: string;
-        email: string;
-        company: string | null;
-      };
-      last_activity_at: string;
-      created_at: string;
-    }>;
+    data: Array<App.Data.ConversationData>;
     links: any;
     meta: {
       current_page: number;
