@@ -18,37 +18,19 @@ class PostmarkEmailService implements EmailService
 {
     public function sendNewConversation(Conversation $conversation, string $subject, string $html, array $attachments = []): SentEmailDto
     {
-        // Ensure contact is loaded
-        if (!$conversation->relationLoaded('contact')) {
-            $conversation->load('contact');
-        }
+        // For new conversations, just create a temp message and use sendReply
+        $tempMessage = new Message([
+            'conversation_id' => $conversation->id,
+            'type' => 'support',
+            'content' => $html,
+        ]);
         
-        $contact = $conversation->contact;
-        $messageId = $this->generateMessageId();
-        $threadId = $this->generateThreadId($conversation->id);
-        
-        // Use the NewConversationMail mailable - now with conversation for threading
-        $mailable = new NewConversationMail(
-            contact: $contact,
-            subject: $subject,
-            htmlContent: $html,
-            attachments: $attachments,
-            messageId: $messageId,
-            conversation: $conversation
-        );
-        
-        Mail::send($mailable);
-        
-        return new SentEmailDto(
-            message_id: $messageId,
-            thread_id: $threadId,
-            timestamp: Carbon::now()->toISOString()
-        );
+        return $this->sendReply($tempMessage, $attachments);
     }
     
     public function sendReply(Message $reply, array $attachments = []): SentEmailDto
     {
-        // Ensure relationships are loaded but don't reload if already loaded
+        // Load relationships
         if (!$reply->relationLoaded('conversation')) {
             $reply->load('conversation');
         }
@@ -60,41 +42,25 @@ class PostmarkEmailService implements EmailService
         $contact = $conversation->contact;
         $messageId = $this->generateMessageId();
         
-        // Generate thread ID based on conversation ID for consistent threading
-        $threadId = $this->generateThreadId($conversation->id);
-        
-        // Store message threading headers in database before sending
-        $previousMessageIds = $conversation->messages()
-            ->whereNotNull('message_id')
-            ->where('id', '!=', $reply->id)
-            ->orderBy('created_at')
-            ->pluck('message_id')
-            ->toArray();
-            
-        // Build references chain - start with thread ID, then add all previous message IDs
-        $references = array_merge([$threadId], $previousMessageIds);
-        $referencesString = implode(' ', array_unique($references));
-        
+        // Simple message storage
         $reply->message_id = $messageId;
-        $reply->in_reply_to = $threadId; // Reply to the thread root
-        $reply->references = $referencesString;
         $reply->save();
 
-        // Use the ReplyMail mailable
+        // Send the reply
         $mailable = new ReplyMail(
             contact: $contact,
             conversation: $conversation,
             reply: $reply,
             attachments: $attachments,
             messageId: $messageId,
-            threadId: $threadId
+            threadId: ''
         );
 
         Mail::send($mailable);
         
         return new SentEmailDto(
             message_id: $messageId,
-            thread_id: $threadId,
+            thread_id: $messageId,
             timestamp: Carbon::now()->toISOString()
         );
     }

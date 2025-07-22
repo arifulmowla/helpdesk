@@ -16,12 +16,12 @@ class PostmarkWebhookController extends Controller
     {
         try {
             Log::info('Postmark webhook received', $request->all());
-            
+
             $emailData = $this->parseEmailData($request);
             $contact = $this->findOrCreateContact($emailData);
             $conversation = $this->findOrCreateConversation($contact, $emailData);
             $message = $this->createMessage($conversation, $emailData);
-            
+
             // Save raw email
             RawEmail::create([
                 'message_id' => $emailData['message_id'],
@@ -50,6 +50,7 @@ class PostmarkWebhookController extends Controller
             'from_email' => $fromParsed['email'],
             'from_name' => $fromParsed['name'],
             'subject' => $request->input('Subject'),
+            'stripped_text_reply' => $request->input('StrippedTextReply'),
             'text_body' => $request->input('TextBody'),
             'html_body' => $request->input('HtmlBody'),
             'headers' => $headers,
@@ -99,7 +100,7 @@ class PostmarkWebhookController extends Controller
     {
         // Try to find conversation by threading headers first
         $conversation = $this->findConversationByThreading($contact, $emailData);
-        
+
         if ($conversation) {
             // Update last activity for existing conversation
             $conversation->update([
@@ -108,11 +109,11 @@ class PostmarkWebhookController extends Controller
             ]);
             return $conversation;
         }
-        
+
         // Fallback to subject-based matching
         $subject = $emailData['subject'];
         $cleanSubject = preg_replace('/^(Re:|RE:|Fwd:|FWD:|Fw:)\s*/i', '', $subject);
-        
+
         $conversation = Conversation::where('contact_id', $contact->id)
             ->where('subject', $cleanSubject)
             ->where('status', '!=', 'closed')
@@ -154,10 +155,21 @@ class PostmarkWebhookController extends Controller
 
     private function getRawEmailContent(array $emailData): string
     {
+        $strippedTextReply = $emailData['stripped_text_reply'];
         $htmlBody = $emailData['html_body'];
         $textBody = $emailData['text_body'];
 
-        // Return raw content without any cleaning/sanitization
+        // Prefer stripped text reply for new content
+        if (!empty($strippedTextReply)) {
+            // Normalize line endings
+            $lines = preg_split('/\r\n|\r|\n/', $strippedTextReply);
+
+            if (!empty($lines) && str_contains(trim(end($lines)), '<')) {
+                array_pop($lines);
+            }
+            return trim(implode("\n", $lines));
+        }
+
         if (!empty($htmlBody)) {
             return $htmlBody;
         }
@@ -189,18 +201,18 @@ class PostmarkWebhookController extends Controller
     {
         $inReplyTo = $emailData['in_reply_to'];
         $references = $emailData['references'];
-        
+
         if (empty($inReplyTo) && empty($references)) {
             return null;
         }
-        
+
         // Extract thread ID from In-Reply-To or References
         $threadId = $this->extractThreadId($inReplyTo) ?: $this->extractThreadId($references);
-        
+
         if (!$threadId) {
             return null;
         }
-        
+
         // Find conversation by thread ID pattern
         return Conversation::where('id', $threadId)
             ->where('contact_id', $contact->id)
@@ -216,12 +228,12 @@ class PostmarkWebhookController extends Controller
         if (empty($header)) {
             return null;
         }
-        
+
         // Match pattern: <thread-{conversationId}@domain.com>
         if (preg_match('/<thread-([^@]+)@/', $header, $matches)) {
             return $matches[1];
         }
-        
+
         return null;
     }
 }
