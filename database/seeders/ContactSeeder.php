@@ -12,15 +12,11 @@ class ContactSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create 10 fake contacts
-        $companies = ['Acme Inc.', 'Globex Corp', 'Initech', 'Massive Dynamic', 'Stark Industries', 'Wayne Enterprises', 'Umbrella Corp', 'Cyberdyne Systems', 'Soylent Corp', 'Hooli'];
-        
-        for ($i = 0; $i < 10; $i++) {
-            Contact::create([
-                'name' => fake()->name(),
-                'email' => fake()->unique()->safeEmail(),
-                'company' => fake()->randomElement($companies),
-            ]);
-        }
+        // Create a single contact with specific email
+        Contact::create([
+            'name' => 'Christian Bottelet',
+            'email' => 'cbottelet@gmail.com',
+            'company' => 'Test Company',
+        ]);
     }
 }

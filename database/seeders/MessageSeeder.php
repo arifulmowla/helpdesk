@@ -62,57 +62,35 @@ class MessageSeeder extends Seeder
             'Customer is a VIP - priority handling required.',
         ];
         
-        // Create messages for each conversation
-        foreach ($conversations as $conversation) {
-            // Determine number of messages (2-8 per conversation)
-            $messageCount = rand(2, 8);
-            
-            // Create initial customer message
+        // Create messages for the single conversation
+        $conversation = $conversations->first();
+        
+        if ($conversation instanceof Conversation) {
             $createdAt = $conversation->created_at;
             
-            // Ensure $conversation is a Conversation model instance
-            if ($conversation instanceof Conversation) {
-                // Initial customer message
-                Message::create([
-                    'conversation_id' => $conversation->id,
-                    'type' => 'customer',
-                    'content' => fake()->randomElement($customerMessages),
-                    'created_at' => $createdAt,
-                    'updated_at' => $createdAt,
-                ]);
-                
-                // Create additional messages with increasing timestamps
-                for ($i = 1; $i < $messageCount; $i++) {
-                    // Advance time by 1-12 hours for each message
-                    $createdAt = $createdAt->copy()->addHours(rand(1, 12));
-                    
-                    // Determine message type
-                    $types = ['customer', 'support', 'internal'];
-                    $weights = [30, 50, 20]; // 30% customer, 50% support, 20% internal
-                    $type = $this->weightedRandom($types, $weights);
-                    
-                    // Select appropriate content based on type
-                    $content = match ($type) {
-                        'customer' => fake()->randomElement($customerMessages),
-                        'support' => fake()->randomElement($supportMessages),
-                        'internal' => fake()->randomElement($internalNotes),
-                        default => fake()->sentence(),
-                    };
-                    
-                    Message::create([
-                        'conversation_id' => $conversation->id,
-                        'type' => $type,
-                        'content' => $content,
-                        'created_at' => $createdAt,
-                        'updated_at' => $createdAt,
-                    ]);
-                }
-                
-                // Update conversation's last_activity_at to match the last message
-                $conversation->update([
-                    'last_activity_at' => $createdAt,
-                ]);
-            }
+            // Initial customer message
+            Message::create([
+                'conversation_id' => $conversation->id,
+                'type' => 'customer',
+                'content' => 'Hi, I need help testing the email integration feature.',
+                'created_at' => $createdAt,
+                'updated_at' => $createdAt,
+            ]);
+            
+            // Support response
+            $createdAt = $createdAt->copy()->addHour();
+            Message::create([
+                'conversation_id' => $conversation->id,
+                'type' => 'support',
+                'content' => 'Thank you for reaching out! I\'ll be happy to help you test the email integration. This message should trigger an email notification.',
+                'created_at' => $createdAt,
+                'updated_at' => $createdAt,
+            ]);
+            
+            // Update conversation's last_activity_at to match the last message
+            $conversation->update([
+                'last_activity_at' => $createdAt,
+            ]);
         }
     }
     

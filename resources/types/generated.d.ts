@@ -23,4 +23,9 @@ type: string;
 content: string;
 created_at: string;
 };
+export type SentEmailDto = {
+message_id: string;
+thread_id: string | null;
+timestamp: string;
+};
 }

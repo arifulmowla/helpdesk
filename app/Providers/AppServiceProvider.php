@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Services\Email\EmailService;
+use App\Services\Email\PostmarkEmailService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Database\Eloquent\Model;
@@ -29,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
         Vite::useAggressivePrefetching();
         Date::use(CarbonImmutable::class);
         Http::preventStrayRequests();
+        $this->app->singleton(EmailService::class, PostmarkEmailService::class);
     }
 
     /**

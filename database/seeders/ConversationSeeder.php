@@ -22,39 +22,21 @@ class ConversationSeeder extends Seeder
             return;
         }
         
-        // Create 20 fake conversations
-        $subjects = [
-            'Need help with my account',
-            'Payment issue',
-            'How do I reset my password?',
-            'Feature request',
-            'Bug report',
-            'Subscription inquiry',
-            'Billing question',
-            'Technical support needed',
-            'Account access problem',
-            'Product feedback',
-        ];
+        // Create a single conversation
+        $contact = $contacts->first();
+        $createdAt = Carbon::now()->subDays(1);
         
-        $statuses = ['open', 'pending', 'closed'];
-        $priorities = ['low', 'medium', 'high'];
-        
-        for ($i = 0; $i < 20; $i++) {
-            $contact = $contacts->random();
-            $createdAt = Carbon::now()->subDays(rand(1, 30))->subHours(rand(1, 24));
-            
-            // Ensure $contact is a Contact model instance
-            if ($contact instanceof Contact) {
-                Conversation::create([
-                    'contact_id' => $contact->id,
-                    'subject' => fake()->randomElement($subjects),
-                    'status' => fake()->randomElement($statuses),
-                    'priority' => fake()->randomElement($priorities),
-                    'last_activity_at' => $createdAt->addHours(rand(1, 48)),
-                    'created_at' => $createdAt,
-                    'updated_at' => $createdAt,
-                ]);
-            }
+        // Ensure $contact is a Contact model instance
+        if ($contact instanceof Contact) {
+            Conversation::create([
+                'contact_id' => $contact->id,
+                'subject' => 'Email integration test conversation',
+                'status' => 'open',
+                'priority' => 'high',
+                'last_activity_at' => $createdAt->addHours(2),
+                'created_at' => $createdAt,
+                'updated_at' => $createdAt,
+            ]);
         }
     }
 }

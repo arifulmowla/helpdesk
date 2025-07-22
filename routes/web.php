@@ -10,6 +10,10 @@ Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
+// Postmark webhook for inbound emails (no auth required)
+Route::post('/webhooks/postmark/inbound', [App\Http\Controllers\PostmarkWebhookController::class, 'handleInbound'])
+    ->name('postmark.webhook.inbound');
+
 Route::middleware(['auth:web', 'verified'])->group(function () {
     Route::get('/dashboard', fn () => Inertia::render('Dashboard'))->name('dashboard');
 
