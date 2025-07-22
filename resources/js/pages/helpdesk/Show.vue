@@ -4,7 +4,7 @@
       <div class="flex justify-between items-center">
         <Breadcrumb :items="[
           { label: 'Helpdesk', href: '/helpdesk' },
-          { label: conversation.subject, href: '#' }
+          ...(conversation ? [{ label: conversation.subject, href: '#' }] : [])
         ]" />
       </div>
     </template>
@@ -15,16 +15,24 @@
         <div class="p-4 border-b border-gray-200 shrink-0">
           <h2 class="text-lg font-semibold">Conversations</h2>
         </div>
-        <div class="overflow-y-auto flex-1 max-h-[calc(100vh-120px)]">
+        
+        <!-- Filter Component -->
+        <ConversationFilter 
+          :currentFilters="filters.current"
+          :filterOptions="filters.options"
+          :filteredCount="conversations.meta.total"
+        />
+        
+        <div class="overflow-y-auto flex-1">
           <div v-if="conversations.data.length === 0" class="p-4 text-center text-gray-500">
-            No conversations yet
+            No conversations found
           </div>
           <div v-else>
             <ConversationListItem 
               v-for="conv in conversations.data" 
               :key="conv.id"
               :conversation="conv"
-              :is-active="conversation.id === conv.id"
+              :is-active="conversation?.id === conv.id"
               @click="navigateToConversation(conv)"
             />
           </div>
@@ -33,7 +41,14 @@
       
       <!-- Main content area with conversation details -->
       <div class="flex-1 h-full overflow-hidden">
+        <div v-if="!conversation" class="h-full flex items-center justify-center text-gray-500">
+          <div class="text-center">
+            <h3 class="text-lg font-medium mb-2">No conversation selected</h3>
+            <p>Select a conversation from the list to view details</p>
+          </div>
+        </div>
         <ConversationView 
+          v-else
           class="h-full"
           :conversation="conversation" 
           :messages="messages" 
@@ -53,12 +68,13 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import Breadcrumb from '@/components/ui/breadcrumb/Breadcrumb.vue';
 import ConversationView from "@/components/helpdesk/ConversationView.vue";
 import ConversationListItem from "@/components/helpdesk/ConversationListItem.vue";
+import ConversationFilter from "@/components/helpdesk/ConversationFilter.vue";
 // Import types from the new location
 import "@types/generated.d"; 
 
 // Define props
 const props = defineProps<{
-  conversation: App.Data.ConversationData & { messages?: App.Data.MessageData[] };
+  conversation?: App.Data.ConversationData & { messages?: App.Data.MessageData[] };
   messages: Array<App.Data.MessageData & {
     customer_name?: string;
     agent_name?: string;
@@ -74,6 +90,10 @@ const props = defineProps<{
       to: number;
       total: number;
     };
+  };
+  filters: {
+    current: Record<string, any>;
+    options: App.Data.ConversationFilterData;
   };
 }>();
 

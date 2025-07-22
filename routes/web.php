@@ -24,6 +24,7 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
         Route::post('/{conversation}/messages', [MessageController::class, 'store'])->name('helpdesk.messages.store');
         Route::patch('/{conversation}/status', [StatusController::class, 'update'])->name('helpdesk.status.update');
     });
+    
 });
 
 require __DIR__.'/settings.php';

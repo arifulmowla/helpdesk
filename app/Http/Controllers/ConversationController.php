@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Data\ConversationData;
+use App\Data\ConversationFilterData;
 use App\Data\MessageData;
+use App\Filters\ConversationFilter;
 use App\Models\Conversation;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -14,10 +16,14 @@ class ConversationController extends Controller
      * Display the helpdesk with conversations and messages.
      * If no conversation ID is provided, it shows the first conversation or an empty state.
      */
-    public function index(Conversation $conversation = null)
+    public function index(Request $request, Conversation $conversation = null)
     {
-        // Get all conversations for the sidebar
+        // Get filter parameters
+        $filters = $request->only(['status', 'priority', 'unread', 'search', 'contact_id']);
+        
+        // Get all conversations for the sidebar with filters applied
         $allConversations = Conversation::with('contact')
+            ->filter($filters)
             ->orderBy('last_activity_at', 'desc')
             ->paginate(20);
         
@@ -40,7 +46,22 @@ class ConversationController extends Controller
         return Inertia::render('helpdesk/Show', [
             'conversation' => $conversationData,
             'messages' => $messages,
-            'conversations' => ConversationData::collect($allConversations),
+            'conversations' => [
+                'data' => ConversationData::collect($allConversations->items()),
+                'links' => $allConversations->linkCollection()->toArray(),
+                'meta' => [
+                    'current_page' => $allConversations->currentPage(),
+                    'from' => $allConversations->firstItem(),
+                    'last_page' => $allConversations->lastPage(),
+                    'per_page' => $allConversations->perPage(),
+                    'to' => $allConversations->lastItem(),
+                    'total' => $allConversations->total(),
+                ],
+            ],
+            'filters' => [
+                'current' => $filters,
+                'options' => ConversationFilterData::create(),
+            ],
         ]);
     }
 }

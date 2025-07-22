@@ -15,11 +15,12 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->ulid('contact_id');
             $table->string('subject');
-            $table->enum('status', ['open', 'pending', 'closed'])->default('open');
-            $table->enum('priority', ['low', 'medium', 'high'])->default('medium');
+            $table->string('status')->default('open');
+            $table->string('priority')->default('low');
             $table->timestamp('last_activity_at')->nullable();
+            $table->boolean('unread')->default(true);
             $table->timestamps();
-            
+
             $table->foreign('contact_id')->references('id')->on('contacts')->onDelete('cascade');
         });
     }

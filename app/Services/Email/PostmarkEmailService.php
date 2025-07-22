@@ -58,6 +58,9 @@ class PostmarkEmailService implements EmailService
 
         Mail::send($mailable);
         
+        // Mark conversation as read since support agent is responding
+        $conversation->markAsRead();
+        
         return new SentEmailDto(
             message_id: $messageId,
             thread_id: $messageId,

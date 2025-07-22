@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use App\Filters\ConversationFilter;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Conversation extends Model
 {
-    use HasUlids;
+    use HasFactory, HasUlids;
 
     /**
      * The primary key for the model.
@@ -36,6 +38,7 @@ class Conversation extends Model
         'status',
         'priority',
         'last_activity_at',
+        'unread',
     ];
 
     /**
@@ -47,6 +50,7 @@ class Conversation extends Model
         'last_activity_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'unread' => 'boolean',
     ];
 
     /**
@@ -63,5 +67,63 @@ class Conversation extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(Message::class);
+    }
+
+    /**
+     * Mark conversation as read
+     */
+    public function markAsRead(): bool
+    {
+        return $this->update(['unread' => false]);
+    }
+
+    /**
+     * Mark conversation as unread
+     */
+    public function markAsUnread(): bool
+    {
+        return $this->update(['unread' => true]);
+    }
+
+    /**
+     * Check if conversation is unread
+     */
+    public function isUnread(): bool
+    {
+        return $this->unread;
+    }
+
+    /**
+     * Scope to get only unread conversations
+     */
+    public function scopeUnread($query)
+    {
+        return $query->where('unread', true);
+    }
+
+    /**
+     * Scope to get only read conversations
+     */
+    public function scopeRead($query)
+    {
+        return $query->where('unread', false);
+    }
+
+    /**
+     * Scope to filter conversations
+     */
+    public function scopeFilter($query, array $filters)
+    {
+        return (new ConversationFilter($query, $filters))->apply();
+    }
+
+    /**
+     * Scope to get conversations with related data
+     */
+    public function scopeWithRelations($query)
+    {
+        return $query->with(['contact', 'messages' => function ($query) {
+            $query->orderBy('created_at', 'desc')->limit(1);
+        }]);
     }
 }

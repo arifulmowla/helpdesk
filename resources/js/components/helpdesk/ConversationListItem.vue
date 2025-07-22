@@ -1,15 +1,29 @@
 <template>
   <div 
     class="border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
-    :class="{ 'bg-blue-50': isActive }"
+    :class="{ 
+      'bg-blue-50': isActive,
+      'font-semibold': conversation.unread && !isActive
+    }"
     @click="$emit('click')"
   >
     <div class="p-4">
       <div class="flex items-center justify-between">
-        <h3 class="font-medium truncate" :class="{ 'text-blue-600': isActive }">
-          {{ conversation.subject }}
-        </h3>
-        <span class="text-xs text-gray-500">
+        <div class="flex items-center space-x-2 flex-1 min-w-0">
+          <!-- Unread indicator -->
+          <div 
+            v-if="conversation.unread" 
+            class="w-2 h-2 bg-blue-500 rounded-full shrink-0"
+            title="Unread conversation"
+          ></div>
+          <h3 class="font-medium truncate" :class="{ 
+            'text-blue-600': isActive,
+            'font-bold': conversation.unread && !isActive
+          }">
+            {{ conversation.subject }}
+          </h3>
+        </div>
+        <span class="text-xs text-gray-500 ml-2">
           {{ formatDate(conversation.last_activity_at) }}
         </span>
       </div>

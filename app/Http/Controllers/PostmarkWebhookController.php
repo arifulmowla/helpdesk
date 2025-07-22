@@ -102,10 +102,11 @@ class PostmarkWebhookController extends Controller
         $conversation = $this->findConversationByThreading($contact, $emailData);
 
         if ($conversation) {
-            // Update last activity for existing conversation
+            // Update last activity for existing conversation and mark as unread
             $conversation->update([
                 'last_activity_at' => now(),
                 'status' => $conversation->status === 'closed' ? 'open' : $conversation->status,
+                'unread' => true,
             ]);
             return $conversation;
         }
@@ -127,11 +128,13 @@ class PostmarkWebhookController extends Controller
                 'status' => 'open',
                 'priority' => 'medium',
                 'last_activity_at' => now(),
+                'unread' => true,
             ]);
         } else {
             $conversation->update([
                 'last_activity_at' => now(),
                 'status' => $conversation->status === 'closed' ? 'open' : $conversation->status,
+                'unread' => true,
             ]);
         }
 

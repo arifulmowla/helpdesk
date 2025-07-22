@@ -18,6 +18,7 @@ class ConversationData extends Data
         public string $priority,
         public ?string $last_activity_at,
         public string $created_at,
+        public bool $unread,
         public ContactData $contact,
         public Lazy|array $messages,
     ) {
@@ -32,6 +33,7 @@ class ConversationData extends Data
             priority: $conversation->getAttribute('priority'),
             last_activity_at: $conversation->last_activity_at?->format('Y-m-d H:i:s'),
             created_at: $conversation->created_at->format('Y-m-d H:i:s'),
+            unread: $conversation->getAttribute('unread'),
             contact: ContactData::fromModel($conversation->contact),
             messages: Lazy::whenLoaded('messages', $conversation, fn () => MessageData::collect($conversation->messages)),
         );
