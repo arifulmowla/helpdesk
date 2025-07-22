@@ -28,10 +28,15 @@ export default defineConfig({
         }
     },
     server: {
-        host: true,
+        host: '0.0.0.0',
         port: 5174,
+        strictPort: true,
         hmr: {
             port: 5174,
-        }
+            host: 'localhost'
+        },
+        // Allow mixed content for development with ngrok
+        https: false,
+        cors: true
     }
 });
