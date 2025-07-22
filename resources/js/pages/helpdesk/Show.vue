@@ -53,7 +53,8 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import Breadcrumb from '@/components/ui/breadcrumb/Breadcrumb.vue';
 import ConversationView from "@/components/helpdesk/ConversationView.vue";
 import ConversationListItem from "@/components/helpdesk/ConversationListItem.vue";
-import "@/types/generated"; 
+// Import types from the new location
+import "@types/generated.d"; 
 
 // Define props
 const props = defineProps<{

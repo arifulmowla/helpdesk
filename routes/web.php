@@ -1,6 +1,8 @@
 <?php
 
-use App\Http\Controllers\HelpdeskController;
+use App\Http\Controllers\ConversationController;
+use App\Http\Controllers\MessageController;
+use App\Http\Controllers\StatusController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -13,10 +15,10 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
 
     // Helpdesk routes
     Route::prefix('helpdesk')->group(function () {
-        Route::get('/', [HelpdeskController::class, 'index'])->name('helpdesk.index');
-        Route::get('/{conversation}', [HelpdeskController::class, 'index'])->name('helpdesk.show');
-        Route::post('/{conversation}/messages', [HelpdeskController::class, 'storeMessage'])->name('helpdesk.messages.store');
-        Route::patch('/{conversation}/status', [HelpdeskController::class, 'updateStatus'])->name('helpdesk.status.update');
+        Route::get('/', [ConversationController::class, 'index'])->name('helpdesk.index');
+        Route::get('/{conversation}', [ConversationController::class, 'index'])->name('helpdesk.show');
+        Route::post('/{conversation}/messages', [MessageController::class, 'store'])->name('helpdesk.messages.store');
+        Route::patch('/{conversation}/status', [StatusController::class, 'update'])->name('helpdesk.status.update');
     });
 });
 

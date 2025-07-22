@@ -32,6 +32,8 @@
 import { defineProps, defineEmits } from 'vue';
 import StatusBadge from './StatusBadge.vue';
 import PriorityBadge from './PriorityBadge.vue';
+// Import generated types
+import '@types/generated.d';
 
 // Define props
 const props = defineProps<{

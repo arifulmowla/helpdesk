@@ -215,7 +215,7 @@ import CustomerBubble from './bubbles/CustomerBubble.vue';
 import AgentBubble from './bubbles/AgentBubble.vue';
 import InternalNoteBubble from './bubbles/InternalNoteBubble.vue';
 // Import generated types
-import '@/types/generated';
+import '@types/generated.d';
 
 // Define message type interfaces with more specific types than the generated ones
 interface CustomerMessage extends App.Data.MessageData {
