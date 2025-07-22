@@ -23,12 +23,14 @@ class AppServiceProvider extends ServiceProvider
         DB::prohibitDestructiveCommands($this->app->isProduction());
         Model::shouldBeStrict();
 
-        if (!$this->app->environment('local')) {
+        // Force HTTPS when APP_URL is HTTPS
+        if (str_starts_with(env('APP_URL', ''), 'https://')) {
             URL::forceScheme('https');
         }
 
         Model::automaticallyEagerLoadRelationships();
         Vite::useAggressivePrefetching();
+        
         Date::use(CarbonImmutable::class);
         Http::preventStrayRequests();
         $this->app->singleton(EmailService::class, PostmarkEmailService::class);
