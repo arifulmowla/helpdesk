@@ -5,10 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Contact;
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Models\RawEmail;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class PostmarkWebhookController extends Controller
 {
@@ -20,26 +20,25 @@ class PostmarkWebhookController extends Controller
     public function handleInbound(Request $request): Response
     {
         try {
-            // Log the incoming webhook for debugging
             Log::info('Postmark inbound webhook received', [
                 'headers' => $request->headers->all(),
                 'payload' => $request->all()
             ]);
 
-            // Validate that this is a valid Postmark webhook
             $this->validatePostmarkWebhook($request);
-
-            // Parse the email data
             $emailData = $this->parseInboundEmail($request);
-
-            // Find or create contact
             $contact = $this->findOrCreateContact($emailData);
-
-            // Find existing conversation or create new one
             $conversation = $this->findOrCreateConversation($contact, $emailData);
-
-            // Create the message
             $message = $this->createMessage($conversation, $emailData);
+
+            // Save raw email data
+            RawEmail::create([
+                'message_id' => $emailData['message_id'],
+                'message_id_ref' => $message->id,
+                'headers' => $emailData['headers'],
+                'payload' => $emailData,
+                'raw_content' => $emailData['text_body'] ?? $emailData['html_body'],
+            ]);
 
             Log::info('Successfully processed inbound email', [
                 'contact_id' => $contact->id,
@@ -57,8 +56,6 @@ class PostmarkWebhookController extends Controller
                 'payload' => $request->all()
             ]);
 
-            // Return 200 to prevent Postmark from retrying
-            // Log the error for manual investigation
             return response('Error logged', 200);
         }
     }
@@ -96,7 +93,7 @@ class PostmarkWebhookController extends Controller
             'bcc' => $request->input('Bcc'),
             'subject' => $request->input('Subject'),
             'text_body' => $request->input('TextBody'),
-            'html_body' => $request->input('HtmlBody'),
+            'html_body' => $this->convertToOriginalFormat($request->input('HtmlBody'), $request->input('TextBody'), $request->input('Headers', [])),
             'reply_to' => $request->input('ReplyTo'),
             'date' => $request->input('Date'),
             'mailbox_hash' => $request->input('MailboxHash'),
@@ -130,7 +127,10 @@ class PostmarkWebhookController extends Controller
      */
     private function findOrCreateContact(array $emailData): Contact
     {
-        $contact = Contact::where('email', $emailData['from_email'])->first();
+        // Handle forwarded emails by using original sender's email
+        $forwardedEmail = $this->extractForwardedEmail($emailData['headers']);
+
+        $contact = Contact::where('email', $forwardedEmail ?? $emailData['from_email'])->first();
 
         if (!$contact) {
             $contact = Contact::create([
@@ -147,6 +147,22 @@ class PostmarkWebhookController extends Controller
         }
 
         return $contact;
+    }
+
+    /**
+     * Extract the original sender's email if the message is forwarded.
+     */
+    private function extractForwardedEmail(array $headers): ?string
+    {
+        // Example logic to parse headers for original email - adjust as needed
+        foreach ($headers as $header) {
+            if (stripos($header['Name'], 'X-Forwarded-For') !== false) {
+                if (preg_match('/<(.+?)>/', $header['Value'], $matches)) {
+                    return $matches[1];
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -264,5 +280,56 @@ class PostmarkWebhookController extends Controller
         $html = preg_replace('/\s*data\s*:[^\'"]*/i', '', $html);
         
         return $html;
+    }
+
+    /**
+     * Convert email content to include full thread and original formatting.
+     */
+    private function convertToOriginalFormat(string $htmlBody = null, string $textBody = null, array $headers = []): string
+    {
+        // For replies, we want to preserve the original email thread structure
+        if (!empty($htmlBody)) {
+            // Process HTML content to maintain email thread structure
+            $processedHtml = $this->processEmailThread($htmlBody, $headers);
+            return $processedHtml;
+        }
+        
+        if (!empty($textBody)) {
+            // Process text content and convert to HTML while maintaining structure
+            $processedText = $this->processEmailThread($textBody, $headers);
+            return nl2br(htmlspecialchars($processedText));
+        }
+
+        return 'Empty message';
+    }
+
+    /**
+     * Process email thread to maintain original context including previous messages.
+     */
+    private function processEmailThread(string $content, array $headers): string
+    {
+        // This method could be enhanced to:
+        // 1. Detect and preserve quoted text from previous messages
+        // 2. Parse "On [date], [person] wrote:" patterns
+        // 3. Maintain proper threading structure
+        
+        // For now, return the content as-is but we could add more sophisticated parsing
+        // to extract the new message content vs. quoted previous messages
+        
+        // Identify common email separators
+        $separators = [
+            '/^\s*On .+? wrote:\s*$/m',
+            '/^\s*From:.+?$/m',
+            '/^\s*-----Original Message-----\s*$/m',
+            '/^\s*>{1,}.*$/m', // Lines starting with >
+        ];
+        
+        // For threading, we might want to wrap quoted content differently
+        // This is a basic implementation - could be much more sophisticated
+        foreach ($separators as $separator) {
+            $content = preg_replace($separator, '<div class="email-quote">$0</div>', $content);
+        }
+        
+        return $content;
     }
 }
