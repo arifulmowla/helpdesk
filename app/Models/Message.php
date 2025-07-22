@@ -33,6 +33,9 @@ class Message extends Model
         'conversation_id',
         'type',
         'content',
+        'message_id',
+        'in_reply_to',
+        'references',
     ];
 
     /**

@@ -4,6 +4,7 @@ namespace App\Services\Email;
 
 use App\Data\SentEmailDto;
 use App\Models\Contact;
+use App\Models\Conversation;
 use App\Models\Message;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Mail\Mailable;
@@ -15,24 +16,32 @@ use Carbon\Carbon;
 
 class PostmarkEmailService implements EmailService
 {
-    public function sendNewConversation(Contact $contact, string $subject, string $html, array $attachments = []): SentEmailDto
+    public function sendNewConversation(Conversation $conversation, string $subject, string $html, array $attachments = []): SentEmailDto
     {
-        $messageId = $this->generateMessageId();
+        // Ensure contact is loaded
+        if (!$conversation->relationLoaded('contact')) {
+            $conversation->load('contact');
+        }
         
-        // Use the NewConversationMail mailable
+        $contact = $conversation->contact;
+        $messageId = $this->generateMessageId();
+        $threadId = $this->generateThreadId($conversation->id);
+        
+        // Use the NewConversationMail mailable - now with conversation for threading
         $mailable = new NewConversationMail(
             contact: $contact,
             subject: $subject,
             htmlContent: $html,
             attachments: $attachments,
-            messageId: $messageId
+            messageId: $messageId,
+            conversation: $conversation
         );
         
         Mail::send($mailable);
         
         return new SentEmailDto(
             message_id: $messageId,
-            thread_id: null, // New conversation doesn't have a thread ID yet
+            thread_id: $threadId,
             timestamp: Carbon::now()->toISOString()
         );
     }
@@ -54,6 +63,23 @@ class PostmarkEmailService implements EmailService
         // Generate thread ID based on conversation ID for consistent threading
         $threadId = $this->generateThreadId($conversation->id);
         
+        // Store message threading headers in database before sending
+        $previousMessageIds = $conversation->messages()
+            ->whereNotNull('message_id')
+            ->where('id', '!=', $reply->id)
+            ->orderBy('created_at')
+            ->pluck('message_id')
+            ->toArray();
+            
+        // Build references chain - start with thread ID, then add all previous message IDs
+        $references = array_merge([$threadId], $previousMessageIds);
+        $referencesString = implode(' ', array_unique($references));
+        
+        $reply->message_id = $messageId;
+        $reply->in_reply_to = $threadId; // Reply to the thread root
+        $reply->references = $referencesString;
+        $reply->save();
+
         // Use the ReplyMail mailable
         $mailable = new ReplyMail(
             contact: $contact,
@@ -75,17 +101,21 @@ class PostmarkEmailService implements EmailService
     
     /**
      * Generate a unique message ID for email tracking
+     * Format: <uuid@domain.com> as per RFC standards
      */
     private function generateMessageId(): string
     {
-        return '<' . Str::uuid() . '@' . config('app.url', 'localhost') . '>';
+        $domain = parse_url(config('app.url', 'localhost'), PHP_URL_HOST) ?: 'localhost';
+        return '<' . Str::uuid() . '@' . $domain . '>';
     }
     
     /**
      * Generate a consistent thread ID based on conversation ID
+     * Format: <thread-conversationId@domain.com> as per RFC standards
      */
     private function generateThreadId(string $conversationId): string
     {
-        return '<thread-' . $conversationId . '@' . config('app.url', 'localhost') . '>';
+        $domain = parse_url(config('app.url', 'localhost'), PHP_URL_HOST) ?: 'localhost';
+        return '<thread-' . $conversationId . '@' . $domain . '>';
     }
 }
