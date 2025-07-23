@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\Priority;
+use App\Enums\Status;
 use App\Filters\ConversationFilter;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -39,6 +41,7 @@ class Conversation extends Model
         'priority',
         'last_activity_at',
         'unread',
+        'read_at',
     ];
 
     /**
@@ -50,7 +53,10 @@ class Conversation extends Model
         'last_activity_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'read_at' => 'datetime',
         'unread' => 'boolean',
+        'status' => Status::class,
+        'priority' => Priority::class,
     ];
 
     /**
@@ -74,7 +80,10 @@ class Conversation extends Model
      */
     public function markAsRead(): bool
     {
-        return $this->update(['unread' => false]);
+        return $this->update([
+            'unread' => false,
+            'read_at' => now()
+        ]);
     }
 
     /**
@@ -82,7 +91,10 @@ class Conversation extends Model
      */
     public function markAsUnread(): bool
     {
-        return $this->update(['unread' => true]);
+        return $this->update([
+            'unread' => true,
+            'read_at' => null
+        ]);
     }
 
     /**

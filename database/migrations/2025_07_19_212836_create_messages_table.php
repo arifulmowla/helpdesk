@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('messages', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->ulid('conversation_id');
-            $table->enum('type', ['customer', 'support', 'internal'])->default('customer');
+            $table->string('type');
             $table->text('content');
             $table->timestamps();
-            
+
             $table->foreign('conversation_id')->references('id')->on('conversations')->onDelete('cascade');
         });
     }

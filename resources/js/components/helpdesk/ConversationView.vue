@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-full">
+  <div class="flex flex-col h-full" @click="closeMoreMenu">
     <!-- Header - Fixed at top -->
     <div class="p-4 border-b bg-card shrink-0">
       <div class="flex items-start justify-between mb-3">
@@ -15,37 +15,51 @@
           <span class="px-2 py-1 text-xs font-medium rounded-md bg-status-open text-foreground">
             #{{ conversation.id.substring(0, 8) }}
           </span>
+
+          <!-- More Actions Dropdown -->
+          <div class="relative">
+            <button
+              @click.stop="toggleMoreMenu"
+              class="p-2 hover:bg-gray-100 rounded-md transition-colors"
+              title="More actions"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01" />
+              </svg>
+            </button>
+
+            <!-- Dropdown Menu -->
+            <div
+              v-if="showMoreMenu"
+              @click.stop
+              class="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50"
+            >
+              <div class="py-1">
+                <button
+                  @click="markAsUnread"
+                  class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 7.89a2 2 0 002.83 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Mark as unread
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Status Controls -->
+      <!-- Status and Priority Tags -->
       <div class="flex items-center gap-4">
         <div class="flex items-center gap-2">
-          <span class="text-sm font-medium">Status:</span>
-          <select 
-            v-model="status" 
-            @change="onUpdateStatus"
-            class="w-36 border-2 hover:border-primary/40 transition-colors rounded-md px-3 py-1 text-sm"
-          >
-            <option value="open" class="font-medium">Open</option>
-            <option value="pending" class="font-medium">Pending</option>
-            <option value="resolved" class="font-medium">Resolved</option>
-            <option value="closed" class="font-medium">Closed</option>
-          </select>
+          <span class="text-sm text-muted-foreground">Status:</span>
+          <Tag :value="conversation.status" />
         </div>
 
         <div class="flex items-center gap-2">
-          <span class="text-sm font-medium">Priority:</span>
-          <select 
-            v-model="priority" 
-            @change="onUpdatePriority"
-            class="w-36 border-2 hover:border-primary/40 transition-colors rounded-md px-3 py-1 text-sm"
-          >
-            <option value="low" class="font-medium">Low</option>
-            <option value="medium" class="font-medium">Medium</option>
-            <option value="high" class="font-medium">High</option>
-            <option value="urgent" class="font-medium">Urgent</option>
-          </select>
+          <span class="text-sm text-muted-foreground">Priority:</span>
+          <Tag :value="conversation.priority" />
         </div>
       </div>
     </div>
@@ -53,44 +67,29 @@
     <!-- Scrollable Messages Container -->
     <div ref="messagesContainer" class="flex-1 overflow-y-auto p-4 max-h-[calc(100vh-250px)]">
       <div v-for="message in messages" :key="message.id" class="mb-4 last:mb-0">
-        <CustomerBubble 
-          v-if="message.type === 'customer'" 
-          :message="message as CustomerMessage" 
+        <CustomerBubble
+          v-if="message.type === 'customer'"
+          :message="message as CustomerMessage"
         />
-        <AgentBubble 
-          v-else-if="message.type === 'support'" 
-          :message="message as AgentMessage" 
+        <AgentBubble
+          v-else-if="message.type === 'agent'"
+          :message="message as AgentMessage"
         />
-        <InternalNoteBubble 
-          v-else-if="message.type === 'internal'" 
-          :message="message as InternalMessage" 
+        <InternalNoteBubble
+          v-else-if="message.type === 'internal'"
+          :message="message as InternalMessage"
         />
       </div>
     </div>
 
     <!-- Reply Section - Fixed at bottom -->
     <div class="border-t bg-card p-4 shrink-0 sticky bottom-0 z-10">
-      <!-- Toggle Button -->
-      <div class="flex justify-end mb-2">
-        <button 
-          @click="toggleFormExpanded"
-          class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <svg v-if="isFormExpanded" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-          </svg>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-          </svg>
-          {{ isFormExpanded ? 'Collapse' : 'Expand' }}
-        </button>
-      </div>
-      
+
       <!-- Compact Form (Single Line) -->
       <div v-if="!isFormExpanded" class="flex items-center gap-2">
         <div class="flex-1">
-          <input 
-            :placeholder="activeTab === 'reply' ? 'Type a reply...' : 'Type an internal note...'" 
+          <input
+            :placeholder="activeTab === 'reply' ? 'Type a reply...' : 'Type an internal note...'"
             :value="activeTab === 'reply' ? replyContent : internalNote"
             @input="handleInputChange"
             class="w-full border-2 rounded-md px-3 py-2 text-sm focus:outline-none"
@@ -100,8 +99,8 @@
         <div class="flex items-center gap-1">
           <button
             :class="`flex items-center gap-1 transition-all px-2 py-1 rounded-md text-xs ${
-              activeTab === 'reply' 
-                ? 'bg-primary text-primary-foreground shadow-sm' 
+              activeTab === 'reply'
+                ? 'bg-primary text-primary-foreground shadow-sm'
                 : 'bg-muted/50 hover:bg-muted text-muted-foreground'
             }`"
             @click="setActiveTab('reply')"
@@ -110,15 +109,15 @@
           </button>
           <button
             :class="`flex items-center gap-1 transition-all px-2 py-1 rounded-md text-xs ${
-              activeTab === 'internal' 
-                ? 'bg-primary text-primary-foreground shadow-sm' 
+              activeTab === 'internal'
+                ? 'bg-primary text-primary-foreground shadow-sm'
                 : 'bg-muted/50 hover:bg-muted text-muted-foreground'
             }`"
             @click="setActiveTab('internal')"
           >
             Note
           </button>
-          <button 
+          <button
             @click="activeTab === 'reply' ? handleSendReply() : handleSendInternalNote()"
             :disabled="activeTab === 'reply' ? !replyContent.trim() : !internalNote.trim()"
             class="flex items-center px-3 py-1 bg-primary text-primary-foreground rounded-md text-xs disabled:opacity-50"
@@ -134,8 +133,8 @@
         <div class="flex gap-1 mb-4 p-1 bg-muted/50 rounded-lg">
           <button
             :class="`flex items-center gap-2 flex-1 transition-all px-3 py-2 rounded-md text-sm ${
-              activeTab === 'reply' 
-                ? 'bg-primary text-primary-foreground shadow-sm' 
+              activeTab === 'reply'
+                ? 'bg-primary text-primary-foreground shadow-sm'
                 : 'hover:bg-muted text-muted-foreground'
             }`"
             @click="setActiveTab('reply')"
@@ -147,8 +146,8 @@
           </button>
           <button
             :class="`flex items-center gap-2 flex-1 transition-all px-3 py-2 rounded-md text-sm ${
-              activeTab === 'internal' 
-                ? 'bg-primary text-primary-foreground shadow-sm' 
+              activeTab === 'internal'
+                ? 'bg-primary text-primary-foreground shadow-sm'
                 : 'hover:bg-muted text-muted-foreground'
             }`"
             @click="setActiveTab('internal')"
@@ -162,16 +161,17 @@
 
         <!-- Reply Form -->
         <div v-if="activeTab === 'reply'" class="space-y-3">
-          <textarea
+          <TiptapEditor
+            ref="replyEditor"
             v-model="replyContent"
             placeholder="Type your reply to the customer..."
-            rows="4"
-            class="w-full resize-none border-2 focus:border-primary/50 transition-colors rounded-md p-3"
-          ></textarea>
+            @update:isEmpty="isReplyEmpty = $event"
+            :onSubmit="handleSendReply"
+          />
           <div class="flex justify-end">
-            <button 
+            <button
               @click="handleSendReply"
-              :disabled="!replyContent.trim()"
+              :disabled="isReplyEmpty"
               class="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md disabled:opacity-50"
             >
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -184,16 +184,17 @@
 
         <!-- Internal Note Form -->
         <div v-if="activeTab === 'internal'" class="space-y-3">
-          <textarea
+          <TiptapEditor
+            ref="internalEditor"
             v-model="internalNote"
             placeholder="Add an internal note (only visible to your team)..."
-            rows="4"
-            class="w-full resize-none border-2 border-secondary/40 focus:border-secondary/60 transition-colors rounded-md p-3"
-          ></textarea>
+            @update:isEmpty="isInternalNoteEmpty = $event"
+            :onSubmit="handleSendInternalNote"
+          />
           <div class="flex justify-end">
-            <button 
+            <button
               @click="handleSendInternalNote"
-              :disabled="!internalNote.trim()"
+              :disabled="isInternalNoteEmpty"
               class="flex items-center gap-2 px-4 py-2 border border-secondary/60 text-secondary-foreground rounded-md disabled:opacity-50"
             >
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -209,22 +210,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, nextTick } from 'vue';
+import { ref, watch, onMounted, nextTick, computed } from 'vue';
 import { router } from '@inertiajs/vue3';
+import { useConversationCollapseState } from '@/composables/useConversationCollapseState';
 import CustomerBubble from './bubbles/CustomerBubble.vue';
 import AgentBubble from './bubbles/AgentBubble.vue';
 import InternalNoteBubble from './bubbles/InternalNoteBubble.vue';
+import TiptapEditor from '../TiptapEditor.vue';
+import { Tag } from '@/components/ui/tag';
 // Import generated types
 import '@types/generated.d';
 
 // Define message type interfaces with more specific types than the generated ones
 interface CustomerMessage extends App.Data.MessageData {
   type: 'customer';
-  customer_name?: string;
+  message_owner_name?: string;
 }
 
 interface AgentMessage extends App.Data.MessageData {
-  type: 'support';
+  type: 'agent';
   agent_name?: string;
 }
 
@@ -237,16 +241,20 @@ interface InternalMessage extends App.Data.MessageData {
 const props = defineProps<{
   conversation: App.Data.ConversationData;
   messages: Array<App.Data.MessageData & {
-    customer_name?: string;
+    message_owner_name?: string;
     agent_name?: string;
   }>;
 }>();
 
+// Initialize collapse state for this specific conversation
+const { replyFormCollapsed, toggleReplyFormCollapse, persistState } = useConversationCollapseState(props.conversation.id);
+
 // Define emits
 const emit = defineEmits<{
-  (e: 'message-sent', data: { type: 'customer' | 'support' | 'internal'; content: string; conversation_id: string }): void;
+  (e: 'message-sent', data: { type: 'customer' | 'agent' | 'internal'; content: string; conversation_id: string }): void;
   (e: 'status-updated', data: { status: string; conversation_id: string }): void;
   (e: 'priority-updated', data: { priority: string; conversation_id: string }): void;
+  (e: 'conversation-updated', data: { conversation: App.Data.ConversationData }): void;
 }>();
 
 // State
@@ -256,7 +264,13 @@ const replyContent = ref('');
 const internalNote = ref('');
 const status = ref(props.conversation.status);
 const priority = ref(props.conversation.priority);
-const isFormExpanded = ref(true); // Default to expanded form
+const showMoreMenu = ref(false);
+const replyEditor = ref<InstanceType<typeof TiptapEditor> | null>(null);
+const internalEditor = ref<InstanceType<typeof TiptapEditor> | null>(null);
+const isReplyEmpty = ref(true);
+const isInternalNoteEmpty = ref(true);
+// Use persistent collapse state instead of local ref
+const isFormExpanded = computed(() => !replyFormCollapsed.value);
 
 // Methods
 function getMessageComponent(type: string) {
@@ -275,7 +289,7 @@ function setActiveTab(tab: 'reply' | 'internal') {
 }
 
 function toggleFormExpanded() {
-  isFormExpanded.value = !isFormExpanded.value;
+  toggleReplyFormCollapse();
 }
 
 function handleInputChange(e: Event) {
@@ -295,64 +309,26 @@ function scrollToBottom() {
   });
 }
 
-function onUpdateStatus() {
-  if (status.value === props.conversation.status) return;
-  
-  router.patch(`/helpdesk/${props.conversation.id}/status`, {
-    status: status.value
-  }, {
-    preserveScroll: true,
-    preserveState: true,
-    onSuccess: () => {
-      emit('status-updated', {
-        status: status.value,
-        conversation_id: props.conversation.id
-      });
-    },
-    onError: (errors) => {
-      console.error('Error updating status:', errors);
-      status.value = props.conversation.status;
-    }
-  });
-}
-
-function onUpdatePriority() {
-  if (priority.value === props.conversation.priority) return;
-  
-  router.post(`/helpdesk/${props.conversation.id}/priority`, {
-    priority: priority.value
-  }, {
-    preserveScroll: true,
-    preserveState: true,
-    onSuccess: () => {
-      emit('priority-updated', {
-        priority: priority.value,
-        conversation_id: props.conversation.id
-      });
-    },
-    onError: (errors) => {
-      console.error('Error updating priority:', errors);
-      priority.value = props.conversation.priority;
-    }
-  });
-}
+// Status and priority update functions removed since they're now handled by tags
+// These functions are no longer needed as status/priority are now display-only structured data
 
 function handleSendReply() {
-  if (!replyContent.value.trim()) return;
-  
+  if (isReplyEmpty.value || !replyContent.value.trim()) return;
+
   router.post(`/helpdesk/${props.conversation.id}/messages`, {
-    type: 'support',
+    type: 'agent',
     content: replyContent.value
   }, {
     preserveScroll: true,
     preserveState: true,
     onSuccess: () => {
       emit('message-sent', {
-        type: 'support',
+        type: 'agent',
         content: replyContent.value,
         conversation_id: props.conversation.id
       });
       replyContent.value = '';
+      replyEditor.value?.clearContent();
     },
     onError: (errors) => {
       console.error('Error sending reply:', errors);
@@ -361,8 +337,8 @@ function handleSendReply() {
 }
 
 function handleSendInternalNote() {
-  if (!internalNote.value.trim()) return;
-  
+  if (isInternalNoteEmpty.value || !internalNote.value.trim()) return;
+
   router.post(`/helpdesk/${props.conversation.id}/messages`, {
     type: 'internal',
     content: internalNote.value
@@ -376,9 +352,40 @@ function handleSendInternalNote() {
         conversation_id: props.conversation.id
       });
       internalNote.value = '';
+      internalEditor.value?.clearContent();
     },
     onError: (errors) => {
       console.error('Error sending internal note:', errors);
+    }
+  });
+}
+
+// More menu methods
+function toggleMoreMenu() {
+  showMoreMenu.value = !showMoreMenu.value;
+}
+
+function closeMoreMenu() {
+  showMoreMenu.value = false;
+}
+
+function markAsUnread() {
+  router.post(`/conversations/${props.conversation.id}/unread`, {}, {
+    preserveScroll: true,
+    preserveState: true,
+    onSuccess: () => {
+      // Update local state to show unread badge immediately
+      emit('conversation-updated', {
+        conversation: {
+          ...props.conversation,
+          unread: true,
+          read_at: null
+        }
+      });
+      closeMoreMenu();
+    },
+    onError: (errors) => {
+      console.error('Error marking conversation as unread:', errors);
     }
   });
 }

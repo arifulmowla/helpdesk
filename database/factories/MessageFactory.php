@@ -20,7 +20,7 @@ class MessageFactory extends Factory
     {
         return [
             'conversation_id' => Conversation::factory(),
-            'type' => $this->faker->randomElement(['customer', 'support', 'internal']),
+            'type' => $this->faker->randomElement(['customer', 'agent', 'internal']),
             'content' => $this->faker->paragraphs(rand(1, 3), true),
             'message_id' => '<' . Str::uuid() . '@helpdesk.test>',
             'created_at' => $this->faker->dateTimeBetween('-1 month', 'now'),
@@ -38,12 +38,12 @@ class MessageFactory extends Factory
     }
 
     /**
-     * Indicate that the message is from support.
+     * Indicate that the message is from an agent.
      */
-    public function fromSupport(): static
+    public function fromAgent(): static
     {
         return $this->state(fn (array $attributes) => [
-            'type' => 'support',
+            'type' => 'agent',
         ]);
     }
 }

@@ -45,7 +45,7 @@ class ConversationSeeder extends Seeder
                     $messages[] = Message::factory()
                         ->for($conversation)
                         ->state([
-                            'type' => $isFromCustomer ? 'customer' : 'support',
+                            'type' => $isFromCustomer ? 'customer' : 'agent',
                             'created_at' => now()->subDays(rand(0, 30))->subHours(rand(0, 23)),
                         ])
                         ->create();
@@ -121,7 +121,7 @@ class ConversationSeeder extends Seeder
             )
             ->has(
                 Message::factory()
-                    ->fromSupport()
+                    ->fromAgent()
                     ->state([
                         'content' => 'Thanks for reaching out! I can help you with that billing question.',
                         'created_at' => now()->subDays(2)->addHours(1)

@@ -1,7 +1,7 @@
 <template>
   <!-- Use the appropriate bubble component based on message type -->
   <CustomerBubble v-if="message.type === 'customer'" :message="messageAsCustomer" />
-  <AgentBubble v-else-if="message.type === 'support'" :message="messageAsSupport" />
+  <AgentBubble v-else-if="message.type === 'agent'" :message="messageAsAgent" />
   <InternalNoteBubble v-else-if="message.type === 'internal'" :message="messageAsInternal" />
 </template>
 
@@ -16,7 +16,7 @@ const props = defineProps<{
   message: {
     id: string;
     conversation_id: string;
-    type: 'customer' | 'support' | 'internal';
+    type: 'customer' | 'agent' | 'internal';
     content: string;
     created_at: string;
   };
@@ -33,11 +33,11 @@ const messageAsCustomer = computed(() => {
   };
 });
 
-const messageAsSupport = computed(() => {
+const messageAsAgent = computed(() => {
   return {
     id: props.message.id,
     conversation_id: props.message.conversation_id,
-    type: 'support' as const,
+    type: 'agent' as const,
     content: props.message.content,
     created_at: props.message.created_at
   };

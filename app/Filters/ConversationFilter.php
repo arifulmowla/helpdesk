@@ -83,18 +83,22 @@ class ConversationFilter
     }
 
     /**
-     * Get all available status values
+     * Get all available status values with labels and colors
      */
     public static function getAvailableStatuses(): array
     {
-        return array_column(Status::cases(), 'value');
+        return array_map(function (Status $status) {
+            return $status->toArray();
+        }, Status::cases());
     }
 
     /**
-     * Get all available priority values
+     * Get all available priority values with labels and colors
      */
     public static function getAvailablePriorities(): array
     {
-        return array_column(Priority::cases(), 'value');
+        return array_map(function (Priority $priority) {
+            return $priority->toArray();
+        }, Priority::cases());
     }
 }

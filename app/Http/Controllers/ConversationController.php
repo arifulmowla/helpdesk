@@ -8,6 +8,7 @@ use App\Data\MessageData;
 use App\Filters\ConversationFilter;
 use App\Models\Conversation;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Inertia\Inertia;
 
 class ConversationController extends Controller
@@ -37,8 +38,8 @@ class ConversationController extends Controller
         $messages = [];
         
         if ($conversation) {
-            // Load the conversation with its contact and messages
-            $conversation->load('contact', 'messages');
+            // Load the conversation with its contact and messages with nested conversation.contact
+            $conversation->load('contact', 'messages.conversation.contact');
             $conversationData = ConversationData::from($conversation);
             $messages = MessageData::collect($conversation->messages);
         }
@@ -62,6 +63,34 @@ class ConversationController extends Controller
                 'current' => $filters,
                 'options' => ConversationFilterData::create(),
             ],
+        ]);
+    }
+
+    /**
+     * Mark a conversation as read
+     */
+    public function markAsRead(Conversation $conversation): JsonResponse
+    {
+        $conversation->markAsRead();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Conversation marked as read',
+            'conversation' => ConversationData::from($conversation->fresh(['contact']))
+        ]);
+    }
+
+    /**
+     * Mark a conversation as unread
+     */
+    public function markAsUnread(Conversation $conversation): JsonResponse
+    {
+        $conversation->markAsUnread();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Conversation marked as unread',
+            'conversation' => ConversationData::from($conversation->fresh(['contact']))
         ]);
     }
 }

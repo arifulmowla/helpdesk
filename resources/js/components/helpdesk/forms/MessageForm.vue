@@ -14,27 +14,28 @@
         size="sm" 
         variant="outline" 
         class="text-xs"
-        :class="{ 'bg-zinc-50 border-zinc-300': messageType === 'support' }"
-        @click="setMessageType('support')"
+        :class="{ 'bg-zinc-50 border-zinc-300': messageType === 'agent' }"
+        @click="setMessageType('agent')"
       >
-        Support Reply
+        Agent Reply
       </Button>
     </div>
     
     <form @submit.prevent="submitMessage">
-      <textarea
-        v-model="content"
-        class="w-full border border-zinc-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-        rows="3"
+      <TiptapEditor 
+        ref="editorRef" 
+        v-model="content" 
+        @update:isEmpty="onEditorEmptyChange"
         :placeholder="placeholderText"
-      ></textarea>
+        :onSubmit="submitMessage" 
+      />
       
       <div class="flex justify-between mt-2">
         <div class="text-sm text-gray-500">
           <span v-if="messageType === 'internal'" class="text-indigo-600">Internal note (only visible to staff)</span>
-          <span v-else>Sending as support</span>
+          <span v-else>Sending as agent</span>
         </div>
-        <Button type="submit" :disabled="!content.trim()">Send</Button>
+        <Button type="submit" :disabled="isEmpty">Send</Button>
       </div>
     </form>
   </div>
@@ -44,6 +45,7 @@
 import { ref, computed } from 'vue';
 import { Button } from '@/components/ui/button';
 import { router } from '@inertiajs/vue3';
+import TiptapEditor from '@/components/TiptapEditor.vue';
 
 // Define props
 const props = defineProps<{
@@ -52,12 +54,14 @@ const props = defineProps<{
 
 // Define emits
 const emit = defineEmits<{
-  (e: 'sent', data: { type: 'customer' | 'support' | 'internal'; content: string; conversation_id: string }): void;
+  (e: 'sent', data: { type: 'customer' | 'agent' | 'internal'; content: string; conversation_id: string }): void;
 }>();
 
 // State
-const messageType = ref<'customer' | 'support' | 'internal'>('support');
+const messageType = ref<'customer' | 'agent' | 'internal'>('agent');
+const editorRef = ref(null);
 const content = ref('');
+const isEmpty = ref(true);
 
 // Computed
 const placeholderText = computed(() => {
@@ -67,23 +71,32 @@ const placeholderText = computed(() => {
     case 'internal':
       return 'Type internal note (only visible to staff)...';
     default:
-      return 'Type support reply...';
+return 'Type agent reply...';
   }
 });
 
 // Methods
-function setMessageType(type: 'customer' | 'support' | 'internal') {
+function setMessageType(type: 'customer' | 'agent' | 'internal') {
   messageType.value = type;
 }
 
+function onEditorEmptyChange(isEditorEmpty: boolean) {
+  isEmpty.value = isEditorEmpty;
+}
+
 async function submitMessage() {
-  if (!content.value.trim()) return;
+  if (!editorRef.value) return;
+  
+  // Get HTML content from Tiptap editor
+  const htmlContent = editorRef.value.getHTML();
+  
+  if (!htmlContent || htmlContent.trim() === '<p></p>' || !htmlContent.replace(/<[^>]*>/g, '').trim()) return;
   
   try {
     // Use Inertia router instead of fetch
     router.post(`/helpdesk/${props.conversationId}/messages`, {
       type: messageType.value,
-      content: content.value,
+      content: htmlContent,
     }, {
       preserveScroll: true,
       preserveState: true,
@@ -91,12 +104,12 @@ async function submitMessage() {
         // Emit event with the created message
         emit('sent', {
           type: messageType.value,
-          content: content.value,
+          content: htmlContent,
           conversation_id: props.conversationId
         });
         
-        // Reset form
-        content.value = '';
+        // Reset form - clear the editor
+        editorRef.value.clearContent();
       },
       onError: (errors) => {
         console.error('Error sending message:', errors);

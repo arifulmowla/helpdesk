@@ -36,7 +36,7 @@ class MessageSeeder extends Seeder
             'Could you provide more details about your pricing plans?',
         ];
         
-        $supportMessages = [
+        $agentMessages = [
             'Thank you for reaching out to us. How can I help you today?',
             'I understand your concern. Let me look into this for you.',
             'Have you tried resetting your browser cache?',
@@ -77,11 +77,11 @@ class MessageSeeder extends Seeder
                 'updated_at' => $createdAt,
             ]);
             
-            // Support response
+            // Agent response
             $createdAt = $createdAt->copy()->addHour();
             Message::create([
                 'conversation_id' => $conversation->id,
-                'type' => 'support',
+                'type' => 'agent',
                 'content' => 'Thank you for reaching out! I\'ll be happy to help you test the email integration. This message should trigger an email notification.',
                 'created_at' => $createdAt,
                 'updated_at' => $createdAt,

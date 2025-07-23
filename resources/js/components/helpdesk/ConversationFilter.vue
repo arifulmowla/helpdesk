@@ -1,11 +1,15 @@
 <template>
-  <div class="p-4 space-y-4 bg-gray-50 border-b border-gray-200">
-    <!-- Collapsible header -->
-    <button @click="toggleCollapse" class="w-full flex justify-between items-center bg-gray-100 p-2 font-medium">
+  <div class="p-4 space-y-4 bg-gray-50">
+    <!-- Collapsible header - only show if not controlled externally -->
+    <button 
+      v-if="!hideCollapseButton" 
+      @click="toggleFilterCollapse" 
+      class="w-full flex justify-between items-center bg-gray-100 p-2 font-medium"
+    >
       Filters
-      <Icon :name="collapsed ? 'chevron-down' : 'chevron-up'" class="h-4 w-4" />
+      <Icon :name="filterCollapsed ? 'chevron-down' : 'chevron-up'" class="h-4 w-4" />
     </button>
-    <div v-show="!collapsed" class="space-y-4">
+    <div v-show="!filterCollapsed || hideCollapseButton" class="space-y-4">
     
     <!-- Search Input -->
     <div class="space-y-2">
@@ -50,31 +54,33 @@
     <div class="space-y-2">
       <label class="text-sm font-medium text-gray-700">Status</label>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+        <DropdownMenuTrigger as-child>
           <Button variant="outline" class="w-full justify-between">
-            {{ getStatusLabel() }}
+            <span v-if="!filters.status || filters.status.length === 0">Select Status</span>
+            <span v-else-if="filters.status.length === 1">
+              <Tag :value="getStatusObject(filters.status[0])" size="sm" class="mr-2" />
+              {{ getStatusLabel(filters.status[0]) }}
+            </span>
+            <span v-else>{{ filters.status.length }} selected</span>
             <Icon name="chevron-down" class="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent class="w-full">
-          <DropdownMenuCheckboxItem
-            :checked="!filters.status || filters.status.length === 0"
-            @click="clearStatusFilter"
+        <DropdownMenuContent class="w-56">
+          <DropdownMenuItem
+            v-for="status in filterOptions?.statuses || []"
+            :key="status.value"
+            @click="toggleStatus(status.value)"
+            class="flex items-center cursor-pointer"
           >
-            All Statuses
-          </DropdownMenuCheckboxItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuCheckboxItem
-            v-for="status in availableStatuses"
-            :key="status"
-            :checked="filters.status?.includes(status)"
-            @click="toggleStatus(status)"
-            :class="{ 'bg-blue-50 font-medium': filters.status?.includes(status) }"
-          >
-            <StatusBadge :status="status" size="sm" class="mr-2" />
-            {{ capitalizeFirst(status) }}
-            <span class="ml-auto text-xs text-gray-500">({{ stats?.by_status?.[status] || 0 }})</span>
-          </DropdownMenuCheckboxItem>
+            <div class="flex items-center w-4 h-4 mr-2">
+              <svg v-if="filters.status?.includes(status.value)" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <Tag :value="status" size="sm" class="mr-2" />
+            {{ status.label }}
+            <span class="ml-auto text-xs text-gray-500">({{ stats?.by_status?.[status.value] || 0 }})</span>
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
@@ -83,31 +89,33 @@
     <div class="space-y-2">
       <label class="text-sm font-medium text-gray-700">Priority</label>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+        <DropdownMenuTrigger as-child>
           <Button variant="outline" class="w-full justify-between">
-            {{ getPriorityLabel() }}
+            <span v-if="!filters.priority || filters.priority.length === 0">Select Priority</span>
+            <span v-else-if="filters.priority.length === 1">
+              <Tag :value="getPriorityObject(filters.priority[0])" size="sm" class="mr-2" />
+              {{ getPriorityLabel(filters.priority[0]) }}
+            </span>
+            <span v-else>{{ filters.priority.length }} selected</span>
             <Icon name="chevron-down" class="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent class="w-full">
-          <DropdownMenuCheckboxItem
-            :checked="!filters.priority || filters.priority.length === 0"
-            @click="clearPriorityFilter"
+        <DropdownMenuContent class="w-56">
+          <DropdownMenuItem
+            v-for="priority in filterOptions?.priorities || []"
+            :key="priority.value"
+            @click="togglePriority(priority.value)"
+            class="flex items-center cursor-pointer"
           >
-            All Priorities
-          </DropdownMenuCheckboxItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuCheckboxItem
-            v-for="priority in availablePriorities"
-            :key="priority"
-            :checked="filters.priority?.includes(priority)"
-            @click="togglePriority(priority)"
-            :class="{ 'bg-blue-50 font-medium': filters.priority?.includes(priority) }"
-          >
-            <PriorityBadge :priority="priority" size="sm" class="mr-2" />
-            {{ capitalizeFirst(priority) }}
-            <span class="ml-auto text-xs text-gray-500">({{ stats?.by_priority?.[priority] || 0 }})</span>
-          </DropdownMenuCheckboxItem>
+            <div class="flex items-center w-4 h-4 mr-2">
+              <svg v-if="filters.priority?.includes(priority.value)" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <Tag :value="priority" size="sm" class="mr-2" />
+            {{ priority.label }}
+            <span class="ml-auto text-xs text-gray-500">({{ stats?.by_priority?.[priority.value] || 0 }})</span>
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
@@ -134,25 +142,19 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
-
-// Add ref for collapsing
-const collapsed = ref(true);
-function toggleCollapse() {
-  collapsed.value = !collapsed.value;
-}
-import { computed, reactive, ref, watch } from 'vue';
-import { router } from '@inertiajs/vue3';
 import { debounce } from 'lodash';
+import { useConversationCollapseState } from '@/composables/useConversationCollapseState';
+import { navigateWithFilters } from '@/utils/inertiaNavigation';
 import Button from '@/components/ui/button/Button.vue';
 import Input from '@/components/ui/input/Input.vue';
 import Icon from '@/components/Icon.vue';
-import StatusBadge from './StatusBadge.vue';
-import PriorityBadge from './PriorityBadge.vue';
-import DropdownMenu from '@/components/ui/dropdown-menu/DropdownMenu.vue';
-import DropdownMenuTrigger from '@/components/ui/dropdown-menu/DropdownMenuTrigger.vue';
-import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue';
-import DropdownMenuCheckboxItem from '@/components/ui/dropdown-menu/DropdownMenuCheckboxItem.vue';
-import DropdownMenuSeparator from '@/components/ui/dropdown-menu/DropdownMenuSeparator.vue';
+import { Tag } from '@/components/ui/tag';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
 // Import generated types
 import '@types/generated.d';
 
@@ -161,7 +163,12 @@ const props = defineProps<{
   currentFilters: Record<string, any>;
   filterOptions: App.Data.ConversationFilterData;
   filteredCount: number;
+  conversationId?: string; // Optional conversation ID for state persistence
+  hideCollapseButton?: boolean; // Hide internal collapse button when controlled externally
 }>();
+
+// Initialize collapse state
+const { filterCollapsed, toggleFilterCollapse, persistState } = useConversationCollapseState(props.conversationId);
 
 // Reactive filters state
 const filters = reactive<{
@@ -175,8 +182,6 @@ const filters = reactive<{
 const searchQuery = ref(filters.search || '');
 
 // Computed properties
-const availableStatuses = computed(() => props.filterOptions?.statuses || []);
-const availablePriorities = computed(() => props.filterOptions?.priorities || []);
 const stats = computed(() => props.filterOptions?.stats || { total: 0, unread: 0, by_status: {}, by_priority: {} });
 
 const hasActiveFilters = computed(() => {
@@ -199,25 +204,6 @@ function capitalizeFirst(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1).replace('_', ' ');
 }
 
-function getStatusLabel(): string {
-  if (!filters.status || filters.status.length === 0) {
-    return 'All Statuses';
-  }
-  if (filters.status.length === 1) {
-    return capitalizeFirst(filters.status[0]);
-  }
-  return `${filters.status.length} statuses selected`;
-}
-
-function getPriorityLabel(): string {
-  if (!filters.priority || filters.priority.length === 0) {
-    return 'All Priorities';
-  }
-  if (filters.priority.length === 1) {
-    return capitalizeFirst(filters.priority[0]);
-  }
-  return `${filters.priority.length} priorities selected`;
-}
 
 function toggleUnread() {
   filters.unread = filters.unread ? undefined : true;
@@ -235,39 +221,28 @@ function toggleUrgent() {
   updateFilters();
 }
 
-function toggleStatus(status: string) {
+function toggleStatus(statusValue: string) {
   if (!filters.status) filters.status = [];
-  
-  if (filters.status.includes(status)) {
-    filters.status = filters.status.filter(s => s !== status);
+  if (filters.status.includes(statusValue)) {
+    filters.status = filters.status.filter(s => s !== statusValue);
     if (filters.status.length === 0) filters.status = undefined;
   } else {
-    filters.status.push(status);
+    filters.status.push(statusValue);
   }
   updateFilters();
 }
 
-function togglePriority(priority: string) {
+function togglePriority(priorityValue: string) {
   if (!filters.priority) filters.priority = [];
-  
-  if (filters.priority.includes(priority)) {
-    filters.priority = filters.priority.filter(p => p !== priority);
+  if (filters.priority.includes(priorityValue)) {
+    filters.priority = filters.priority.filter(p => p !== priorityValue);
     if (filters.priority.length === 0) filters.priority = undefined;
   } else {
-    filters.priority.push(priority);
+    filters.priority.push(priorityValue);
   }
   updateFilters();
 }
 
-function clearStatusFilter() {
-  filters.status = undefined;
-  updateFilters();
-}
-
-function clearPriorityFilter() {
-  filters.priority = undefined;
-  updateFilters();
-}
 
 function clearAllFilters() {
   filters.search = undefined;
@@ -279,16 +254,25 @@ function clearAllFilters() {
 }
 
 function updateFilters() {
-  // Clean undefined values
-  const cleanFilters = Object.fromEntries(
-    Object.entries(filters).filter(([_, v]) => v !== undefined && v !== '' && (Array.isArray(v) ? v.length > 0 : true))
-  );
+  // Use the navigation utility that handles state persistence
+  navigateWithFilters('/helpdesk', filters);
+}
 
-  // Navigate with new filters
-  router.get('/helpdesk', cleanFilters, {
-    preserveState: true,
-    preserveScroll: true,
-  });
+// Helper methods to get objects for tags
+function getStatusObject(statusValue: string) {
+  return props.filterOptions?.statuses?.find(s => s.value === statusValue) || { value: statusValue, label: capitalizeFirst(statusValue), color: null };
+}
+
+function getPriorityObject(priorityValue: string) {
+  return props.filterOptions?.priorities?.find(p => p.value === priorityValue) || { value: priorityValue, label: capitalizeFirst(priorityValue), color: null };
+}
+
+function getStatusLabel(statusValue: string): string {
+  return getStatusObject(statusValue).label;
+}
+
+function getPriorityLabel(priorityValue: string): string {
+  return getPriorityObject(priorityValue).label;
 }
 
 // Watch for prop changes to sync filters

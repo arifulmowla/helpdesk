@@ -23,6 +23,8 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
         Route::get('/{conversation}', [ConversationController::class, 'index'])->name('helpdesk.show');
         Route::post('/{conversation}/messages', [MessageController::class, 'store'])->name('helpdesk.messages.store');
         Route::patch('/{conversation}/status', [StatusController::class, 'update'])->name('helpdesk.status.update');
+        Route::post('/conversations/{conversation}/read', [ConversationController::class, 'markAsRead'])->name('conversations.read');
+        Route::post('/conversations/{conversation}/unread', [ConversationController::class, 'markAsUnread'])->name('conversations.unread');
     });
     
 });

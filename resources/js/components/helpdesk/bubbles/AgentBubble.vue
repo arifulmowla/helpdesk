@@ -15,7 +15,7 @@
           <span class="font-semibold text-sm">{{ message.agent_name || currentAgent.name }}</span>
           <span class="text-xs px-1.5 py-0.5 rounded-md border" 
                 style="background-color: hsl(var(--primary-bg, 200 100% 97%) / 0.2); color: hsl(var(--primary-fg, 200 50% 25%)); border-color: hsl(var(--primary-border, 200 70% 90%) / 0.3);">
-            Support
+            Agent
           </span>
         </div>
         <span class="text-xs opacity-60 ml-auto font-medium">{{ formatDate(message.created_at) }}</span>
@@ -37,7 +37,7 @@ const props = defineProps<{
   message: {
     id: string;
     conversation_id: string;
-    type: 'support';
+    type: 'agent';
     content: string;
     created_at: string;
     agent_name?: string; // Optional agent name property

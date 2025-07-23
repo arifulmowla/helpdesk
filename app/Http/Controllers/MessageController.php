@@ -23,7 +23,7 @@ class MessageController extends Controller
     {
         // Validate the request
         $validated = $request->validate([
-            'type' => 'required|in:customer,support,internal',
+            'type' => 'required|in:customer,agent,internal',
             'content' => 'required|string',
         ]);
 
@@ -41,8 +41,8 @@ class MessageController extends Controller
             $conversation->last_activity_at = now();
             $conversation->save();
 
-            // Send email if this is a support reply to a customer
-            if ($validated['type'] === 'support') {
+            // Send email if this is an agent reply to a customer
+            if ($validated['type'] === 'agent') {
                 try {
                     // Ensure the message has the conversation relationship loaded
                     $message->setRelation('conversation', $conversation);
@@ -53,6 +53,9 @@ class MessageController extends Controller
 
                     $sentEmail = $this->emailService->sendReply($message);
                 } catch (\Exception $e) {
+                    // Load conversation and contact relationships for the DTO
+                    $message->load('conversation.contact');
+                    
                     return redirect()->back()->with([
                         'warning' => 'Message sent but email notification failed to send',
                         'message' => MessageData::fromModel($message),
@@ -60,9 +63,12 @@ class MessageController extends Controller
                 }
             }
 
+            // Load conversation and contact relationships for the DTO
+            $message->load('conversation.contact');
+            
             // Return a redirect response for Inertia
             return redirect()->back()->with([
-                'success' => 'Message sent successfully' . ($validated['type'] === 'support' ? ' and email notification sent' : ''),
+                'success' => 'Message sent successfully' . ($validated['type'] === 'agent' ? ' and email notification sent' : ''),
                 'message' => MessageData::fromModel($message),
             ]);
         });

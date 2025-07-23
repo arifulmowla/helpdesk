@@ -1,7 +1,7 @@
 <template>
-  <div 
+  <div
     class="border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
-    :class="{ 
+    :class="{
       'bg-blue-50': isActive,
       'font-semibold': conversation.unread && !isActive
     }"
@@ -11,12 +11,12 @@
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-2 flex-1 min-w-0">
           <!-- Unread indicator -->
-          <div 
-            v-if="conversation.unread" 
+          <div
+            v-if="conversation.unread"
             class="w-2 h-2 bg-blue-500 rounded-full shrink-0"
             title="Unread conversation"
           ></div>
-          <h3 class="font-medium truncate" :class="{ 
+          <h3 class="font-medium truncate" :class="{
             'text-blue-600': isActive,
             'font-bold': conversation.unread && !isActive
           }">
@@ -27,16 +27,16 @@
           {{ formatDate(conversation.last_activity_at) }}
         </span>
       </div>
-      
+
       <div class="flex items-center text-sm text-gray-600 mt-1">
         <span class="truncate">{{ conversation.contact.name }}</span>
         <span class="mx-1">•</span>
         <span class="truncate text-gray-500">{{ conversation.contact.company || 'No company' }}</span>
       </div>
-      
+
       <div class="flex items-center mt-2 space-x-2">
-        <StatusBadge :status="conversation.status" size="sm" />
-        <PriorityBadge :priority="conversation.priority" size="sm" />
+        <Tag :value="conversation.status" />
+        <Tag :value="conversation.priority" />
       </div>
     </div>
   </div>
@@ -44,10 +44,9 @@
 
 <script setup lang="ts">
 import { defineProps, defineEmits } from 'vue';
-import StatusBadge from './StatusBadge.vue';
-import PriorityBadge from './PriorityBadge.vue';
+import { Tag } from '@/components/ui/tag';
 // Import generated types
-import '@types/generated.d';
+import '../../../types/generated.d';
 
 // Define props
 const props = defineProps<{
@@ -63,30 +62,30 @@ defineEmits<{
 // Format date to relative time (e.g., "2 hours ago")
 function formatDate(dateString: string | null): string {
   if (!dateString) return 'No activity';
-  
+
   const date = new Date(dateString);
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  
+
   if (diffInSeconds < 60) {
     return 'just now';
   }
-  
+
   const diffInMinutes = Math.floor(diffInSeconds / 60);
   if (diffInMinutes < 60) {
     return `${diffInMinutes}m ago`;
   }
-  
+
   const diffInHours = Math.floor(diffInMinutes / 60);
   if (diffInHours < 24) {
     return `${diffInHours}h ago`;
   }
-  
+
   const diffInDays = Math.floor(diffInHours / 24);
   if (diffInDays < 7) {
     return `${diffInDays}d ago`;
   }
-  
+
   // Format as MM/DD/YYYY for older dates
   return date.toLocaleDateString();
 }

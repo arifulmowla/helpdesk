@@ -21,7 +21,7 @@ class PostmarkEmailService implements EmailService
         // For new conversations, just create a temp message and use sendReply
         $tempMessage = new Message([
             'conversation_id' => $conversation->id,
-            'type' => 'support',
+            'type' => 'agent',
             'content' => $html,
         ]);
         
@@ -58,7 +58,7 @@ class PostmarkEmailService implements EmailService
 
         Mail::send($mailable);
         
-        // Mark conversation as read since support agent is responding
+        // Mark conversation as read since agent is responding
         $conversation->markAsRead();
         
         return new SentEmailDto(

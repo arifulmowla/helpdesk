@@ -54,8 +54,8 @@ class ConversationStatsData extends Data
             ->pluck('count', 'status')
             ->toArray();
         
-        foreach (ConversationFilter::getAvailableStatuses() as $status) {
-            $stats['by_status'][$status] = $statusCounts[$status] ?? 0;
+        foreach (ConversationFilter::getAvailableStatuses() as $statusData) {
+            $stats['by_status'][$statusData['value']] = $statusCounts[$statusData['value']] ?? 0;
         }
 
         // Group by priority
@@ -65,8 +65,8 @@ class ConversationStatsData extends Data
             ->pluck('count', 'priority')
             ->toArray();
         
-        foreach (ConversationFilter::getAvailablePriorities() as $priority) {
-            $stats['by_priority'][$priority] = $priorityCounts[$priority] ?? 0;
+        foreach (ConversationFilter::getAvailablePriorities() as $priorityData) {
+            $stats['by_priority'][$priorityData['value']] = $priorityCounts[$priorityData['value']] ?? 0;
         }
 
         return new self(
