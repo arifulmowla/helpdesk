@@ -29,6 +29,7 @@
 
 <script setup lang="ts">
 import { defineProps } from 'vue';
+import { formatRelativeDate } from '@/utils/dateFormatting';
 
 // Define props
 const props = defineProps<{
@@ -48,32 +49,6 @@ const currentAgent = {
   id: '1'
 };
 
-// Format date to relative time (e.g., "2 hours ago")
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  
-  if (diffInSeconds < 60) {
-    return 'just now';
-  }
-  
-  const diffInMinutes = Math.floor(diffInSeconds / 60);
-  if (diffInMinutes < 60) {
-    return `${diffInMinutes}m ago`;
-  }
-  
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) {
-    return `${diffInHours}h ago`;
-  }
-  
-  const diffInDays = Math.floor(diffInHours / 24);
-  if (diffInDays < 7) {
-    return `${diffInDays}d ago`;
-  }
-  
-  // Format as MM/DD/YYYY for older dates
-  return date.toLocaleDateString();
-}
+// Use shared date formatting utility
+const formatDate = formatRelativeDate;
 </script>

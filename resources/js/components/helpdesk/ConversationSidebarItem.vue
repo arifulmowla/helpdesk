@@ -21,8 +21,8 @@
       </div>
       
       <div class="flex items-center mt-2 space-x-2">
-        <StatusBadge :status="conversation.status" size="sm" />
-        <PriorityBadge :priority="conversation.priority" size="sm" />
+        <Tag :value="conversation.status" size="sm" />
+        <Tag :value="conversation.priority" size="sm" />
       </div>
     </div>
   </div>
@@ -30,8 +30,7 @@
 
 <script setup lang="ts">
 import { defineProps, defineEmits } from 'vue';
-import StatusBadge from './StatusBadge.vue';
-import PriorityBadge from './PriorityBadge.vue';
+import { Tag } from '@/components/ui/tag';
 
 // Define props
 const props = defineProps<{
@@ -61,17 +60,11 @@ defineEmits<{
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
   const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / 86400000); // 24*60*60*1000
   
-  if (diffDays === 0) {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } else if (diffDays === 1) {
-    return 'Yesterday';
-  } else if (diffDays < 7) {
-    return date.toLocaleDateString([], { weekday: 'short' });
-  } else {
-    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-  }
+  if (diffDays === 0) return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return date.toLocaleDateString([], { weekday: 'short' });
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 };
 </script>
