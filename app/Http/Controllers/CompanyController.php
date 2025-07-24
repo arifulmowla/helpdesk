@@ -28,18 +28,7 @@ class CompanyController extends Controller
             ->paginate(20);
             
         return Inertia::render('companies/Index', [
-            'companies' => [
-                'data' => CompanyData::collect($companies->items()),
-                'links' => $companies->linkCollection()->toArray(),
-                'meta' => [
-                    'current_page' => $companies->currentPage(),
-                    'from' => $companies->firstItem(),
-                    'last_page' => $companies->lastPage(),
-                    'per_page' => $companies->perPage(),
-                    'to' => $companies->lastItem(),
-                    'total' => $companies->total(),
-                ],
-            ],
+            'companies' => CompanyData::collect($companies),
             'filters' => [
                 'search' => $search,
             ],

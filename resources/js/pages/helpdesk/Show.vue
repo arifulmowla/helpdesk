@@ -52,7 +52,7 @@
           <ConversationFilter
             :currentFilters="filters.current"
             :filterOptions="filters.options"
-            :filteredCount="conversations.meta.total"
+            :filteredCount="conversations.total"
             :conversationId="conversation?.id"
             :hideCollapseButton="true"
           />
@@ -122,14 +122,17 @@ const props = defineProps<{
   conversations: {
     data: Array<App.Data.ConversationData>;
     links: any;
-    meta: {
-      current_page: number;
-      from: number;
-      last_page: number;
-      per_page: number;
-      to: number;
-      total: number;
-    };
+    current_page: number;
+    from: number;
+    last_page: number;
+    per_page: number;
+    to: number;
+    total: number;
+    first_page_url?: string;
+    last_page_url?: string;
+    next_page_url?: string;
+    prev_page_url?: string;
+    path?: string;
   };
   filters: {
     current: Record<string, any>;

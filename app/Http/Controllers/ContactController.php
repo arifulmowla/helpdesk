@@ -30,18 +30,7 @@ class ContactController extends Controller
             ->paginate(20);
             
         return Inertia::render('contacts/Index', [
-            'contacts' => [
-                'data' => ContactData::collect($contacts->items()),
-                'links' => $contacts->linkCollection()->toArray(),
-                'meta' => [
-                    'current_page' => $contacts->currentPage(),
-                    'from' => $contacts->firstItem(),
-                    'last_page' => $contacts->lastPage(),
-                    'per_page' => $contacts->perPage(),
-                    'to' => $contacts->lastItem(),
-                    'total' => $contacts->total(),
-                ],
-            ],
+            'contacts' => ContactData::collect($contacts),
             'filters' => [
                 'search' => $search,
             ],

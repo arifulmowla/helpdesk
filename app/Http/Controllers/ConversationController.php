@@ -22,44 +22,34 @@ class ConversationController extends Controller
     {
         // Get filter parameters
         $filters = $request->only(['status', 'priority', 'unread', 'search', 'contact_id']);
-        
+
         // Get all conversations for the sidebar with filters applied
         $allConversations = Conversation::with(['contact.company', 'assignedTo'])
             ->filter($filters)
             ->orderBy('last_activity_at', 'desc')
             ->paginate(20);
-        
+
         // If no specific conversation was requested, try to get the first one
         if ($conversation === null || !$conversation->exists) {
             $conversation = Conversation::orderBy('last_activity_at', 'desc')->first();
         }
-        
+
         // Prepare the conversation data and messages if a conversation exists
         $conversationData = null;
         $messages = [];
-        
+
         if ($conversation) {
-            // Load the conversation with its contact, assignedTo and messages with nested conversation.contact
+            $conversation->markAsRead();
+            $conversation->refresh();
             $conversation->load(['contact.company', 'assignedTo', 'messages.conversation.contact.company']);
             $conversationData = ConversationData::from($conversation);
             $messages = MessageData::collect($conversation->messages);
         }
-        
+
         return Inertia::render('helpdesk/Show', [
             'conversation' => $conversationData,
             'messages' => $messages,
-            'conversations' => [
-                'data' => ConversationData::collect($allConversations->items()),
-                'links' => $allConversations->linkCollection()->toArray(),
-                'meta' => [
-                    'current_page' => $allConversations->currentPage(),
-                    'from' => $allConversations->firstItem(),
-                    'last_page' => $allConversations->lastPage(),
-                    'per_page' => $allConversations->perPage(),
-                    'to' => $allConversations->lastItem(),
-                    'total' => $allConversations->total(),
-                ],
-            ],
+            'conversations' => ConversationData::collect($allConversations),
             'filters' => [
                 'current' => $filters,
                 'options' => ConversationFilterData::create(),
@@ -74,7 +64,7 @@ class ConversationController extends Controller
     public function markAsRead(Conversation $conversation): JsonResponse
     {
         $conversation->markAsRead();
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Conversation marked as read',
@@ -88,7 +78,7 @@ class ConversationController extends Controller
     public function markAsUnread(Conversation $conversation)
     {
         $conversation->markAsUnread();
-        
+
         return redirect()->back()->with('success', 'Conversation marked as unread');
     }
 
@@ -107,8 +97,8 @@ class ConversationController extends Controller
 
         $conversation->load(['contact', 'assignedTo']);
 
-        return redirect()->back()->with('success', 
-            $validated['user_id'] 
+        return redirect()->back()->with('success',
+            $validated['user_id']
                 ? 'Conversation assigned to ' . $conversation->assignedTo->name
                 : 'Conversation assignment removed'
         );

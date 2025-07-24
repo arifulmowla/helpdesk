@@ -31,6 +31,7 @@
 <script setup lang="ts">
 import { defineProps, defineEmits } from 'vue';
 import { Tag } from '@/components/ui/tag';
+import { formatConversationDate } from '@/utils/dateFormatting';
 
 // Define props
 const props = defineProps<{
@@ -56,15 +57,6 @@ defineEmits<{
   (e: 'click'): void;
 }>();
 
-// Format date helper function
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffDays = Math.floor((now.getTime() - date.getTime()) / 86400000); // 24*60*60*1000
-  
-  if (diffDays === 0) return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return date.toLocaleDateString([], { weekday: 'short' });
-  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-};
+// Use shared date formatting utility
+const formatDate = formatConversationDate;
 </script>
