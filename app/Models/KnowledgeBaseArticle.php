@@ -75,6 +75,18 @@ class KnowledgeBaseArticle extends Model
         
         return trim($text);
     }
+
+    /**
+     * Get plain text content for embedding generation
+     */
+    public function getPlainTextContent(): string
+    {
+        if (is_array($this->body)) {
+            return $this->extractTextFromTiptapContent($this->body);
+        }
+        
+        return strip_tags($this->body ?? '');
+    }
     
     /**
      * Get the excerpt for the article.

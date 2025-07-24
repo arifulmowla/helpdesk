@@ -45,10 +45,16 @@ class EmbedKnowledgeBaseArticles extends Command
         $this->newLine();
 
         // Check Pinecone connection first
-        if ($this->option('check') || !$this->embeddingService->isReady()) {
+        if ($this->option('check')) {
             return $this->checkConnection();
         }
-
+        
+        // Check if Pinecone is ready
+        if (!$this->embeddingService->isReady()) {
+            $this->error('❌ Pinecone service is not ready. Please check your configuration.');
+            return Command::FAILURE;
+        }
+        
         // Show statistics
         if ($this->option('stats')) {
             return $this->showStats();

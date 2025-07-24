@@ -2,11 +2,9 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Exception;
-use Prism\Prism\Prism;
-use Prism\Prism\Enums\Provider;
-use Prism\Prism\Exceptions\PrismException;
 
 class EmbeddingService
 {
@@ -16,22 +14,37 @@ class EmbeddingService
     public function generateEmbedding(string $text): ?array
     {
         try {
-            $response = Prism::embeddings()
-                ->using(Provider::OpenAI, config('ai.embeddings.model'))
-                ->fromInput($text)
-                ->asEmbeddings();
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . config('ai.openai.api_key'),
+                'Content-Type' => 'application/json',
+            ])->post('https://api.openai.com/v1/embeddings', [
+                'model' => config('ai.embeddings.model'),
+                'input' => $text,
+                'encoding_format' => 'float'
+            ]);
 
+            if (!$response->successful()) {
+                $errorBody = $response->body();
+                $errorData = $response->json();
+                $errorMessage = $errorData['error']['message'] ?? 'Unknown OpenAI API error';
+                
+                Log::error('OpenAI embedding API request failed', [
+                    'status' => $response->status(),
+                    'error_message' => $errorMessage,
+                    'full_response' => $errorBody,
+                    'text' => substr($text, 0, 100) . '...'
+                ]);
+                
+                return null;
+            }
+
+            $data = $response->json();
+            
             // Get the first embedding from the response
-            if (isset($response->embeddings[0])) {
-                return $response->embeddings[0]->embedding;
+            if (isset($data['data'][0]['embedding'])) {
+                return $data['data'][0]['embedding'];
             }
             
-            return null;
-        } catch (PrismException $e) {
-            Log::error('Prism embedding generation failed', [
-                'text' => substr($text, 0, 100) . '...',
-                'error' => $e->getMessage()
-            ]);
             return null;
         } catch (Exception $e) {
             Log::error('Embedding generation failed', [
@@ -104,13 +117,34 @@ class EmbeddingService
      */
     public function generateChunkEmbeddings(string $text, array $metadata = []): array
     {
+        Log::info('Starting generateChunkEmbeddings', [
+            'text_length' => strlen($text),
+            'text_preview' => substr($text, 0, 100) . '...'
+        ]);
+        
         $chunks = $this->chunkText($text);
         $results = [];
 
+        Log::info('Text chunked', [
+            'chunk_count' => count($chunks),
+            'chunks_preview' => array_map(fn($chunk) => substr($chunk, 0, 50) . '...', array_slice($chunks, 0, 2))
+        ]);
+
         foreach ($chunks as $index => $chunk) {
+            Log::info('Generating embedding for chunk', [
+                'chunk_index' => $index,
+                'chunk_length' => strlen($chunk),
+                'chunk_preview' => substr($chunk, 0, 100) . '...'
+            ]);
+            
             $embedding = $this->generateEmbedding($chunk);
 
             if ($embedding) {
+                Log::info('Embedding generated successfully', [
+                    'chunk_index' => $index,
+                    'embedding_dimension' => count($embedding)
+                ]);
+                
                 $results[] = [
                     'embedding' => $embedding,
                     'text' => $chunk,
@@ -119,8 +153,19 @@ class EmbeddingService
                         'chunk_count' => count($chunks)
                     ])
                 ];
+            } else {
+                Log::error('Embedding generation failed for chunk', [
+                    'chunk_index' => $index,
+                    'chunk_length' => strlen($chunk),
+                    'chunk_preview' => substr($chunk, 0, 100) . '...'
+                ]);
             }
         }
+
+        Log::info('generateChunkEmbeddings completed', [
+            'total_chunks' => count($chunks),
+            'successful_embeddings' => count($results)
+        ]);
 
         return $results;
     }

@@ -27,8 +27,9 @@ return [
     'pinecone' => [
         'api_key' => env('PINECONE_API_KEY'),
         'index_name' => env('PINECONE_INDEX_NAME', 'helpdesk'),
+        'index_host' => env('PINECONE_INDEX_HOST'), // Full index URL from Pinecone dashboard
         'environment' => env('PINECONE_ENVIRONMENT', 'gcp-starter'),
-        'dimension' => env('PINECONE_DIMENSION', 1024), // OpenAI text-embedding-3-large dimension
+        'dimension' => env('PINECONE_DIMENSION', 3072), // OpenAI text-embedding-3-large dimension
         'metric' => env('PINECONE_METRIC', 'cosine'),
     ],
 

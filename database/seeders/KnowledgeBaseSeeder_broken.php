@@ -37,7 +37,7 @@ class KnowledgeBaseSeeder extends Seeder
             return;
         }
 
-        // Create exactly 3 realistic knowledge base articles
+        // Create realistic knowledge base articles
         $demoArticles = [
             [
                 'title' => 'How to Set Your Privacy Policy',
@@ -85,6 +85,56 @@ class KnowledgeBaseSeeder extends Seeder
                 'tags' => ['Password Reset', 'Account', 'Security'],
                 'published' => true,
                 'views' => 312
+            ]
+        ];
+
+        // Create only the 3 specific articles
+                'title' => 'Advanced Search Features',
+                'excerpt' => 'Learn how to use advanced search capabilities to find tickets and articles quickly.',
+                'content' => $this->createTiptapContent([
+                    'Our search system supports both full-text search and advanced filtering options.',
+                    'You can search across tickets, customers, and knowledge base articles using various criteria.',
+                    'Advanced operators include date ranges, status filters, and tag-based searches for precise results.'
+                ]),
+                'tags' => ['User Guide', 'API', 'Performance'],
+                'published' => true,
+                'views' => 56
+            ],
+            [
+                'title' => 'Webhook Integration',
+                'excerpt' => 'How to set up webhooks for real-time event notifications.',
+                'content' => $this->createTiptapContent([
+                    'Webhooks allow you to receive real-time notifications when events occur in your helpdesk system.',
+                    'Common webhook events include: new ticket creation, status changes, and customer replies.',
+                    'Set up webhook endpoints in your application to process these events automatically.'
+                ]),
+                'tags' => ['Webhooks', 'Integration', 'API', 'JavaScript'],
+                'published' => true,
+                'views' => 41
+            ],
+            [
+                'title' => 'Performance Monitoring and Analytics',
+                'excerpt' => 'How to monitor system performance and analyze support metrics.',
+                'content' => $this->createTiptapContent([
+                    'Monitoring your helpdesk performance helps identify bottlenecks and improve customer satisfaction.',
+                    'Key metrics to track include: average response time, ticket resolution rate, and customer satisfaction scores.',
+                    'Use the built-in analytics dashboard or integrate with external monitoring tools for deeper insights.'
+                ]),
+                'tags' => ['Monitoring', 'Performance', 'Best Practices'],
+                'published' => true,
+                'views' => 72
+            ],
+            [
+                'title' => 'Docker Deployment Guide',
+                'excerpt' => 'Complete guide for deploying the helpdesk system using Docker containers.',
+                'content' => $this->createTiptapContent([
+                    'Docker deployment simplifies the installation and scaling of your helpdesk system.',
+                    'This guide covers Docker Compose configuration, environment variables, and production deployment considerations.',
+                    'Benefits include consistent environments, easy scaling, and simplified maintenance procedures.'
+                ]),
+                'tags' => ['Docker', 'Installation', 'Configuration', 'AWS'],
+                'published' => false, // Draft article
+                'views' => 0
             ]
         ];
 

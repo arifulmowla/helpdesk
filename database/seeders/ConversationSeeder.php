@@ -14,145 +14,125 @@ class ConversationSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('Creating test conversation data...');
+        $this->command->info('Creating realistic conversation data...');
         
-        // Create 20 contacts with conversations
-        $contacts = Contact::factory(20)->create();
+        // Create the specific contact cbottelet@gmail.com
+        $contact = Contact::firstOrCreate(
+            ['email' => 'cbottelet@gmail.com'],
+            [
+                'name' => 'Christian Bottelet',
+                'company' => 'CrowdBook',
+            ]
+        );
         
-        // Create conversations with various statuses and priorities
-        $statuses = ['open', 'closed', 'awaiting_customer', 'awaiting_agent', 'resolved', 'cancelled'];
-        $priorities = ['low', 'medium', 'high', 'urgent'];
+        // Create exactly 3 conversations - one for each KB topic
+        $this->createPrivacyPolicyConversation($contact);
+        $this->createBookingConversation($contact);
+        $this->createPasswordResetConversation($contact);
         
-        $conversations = collect();
-        
-        // Create a variety of conversations
-        foreach ($contacts as $contact) {
-            // Each contact gets 1-3 conversations
-            $conversationCount = rand(1, 3);
-            
-            for ($i = 0; $i < $conversationCount; $i++) {
-                $conversation = Conversation::factory()
-                    ->for($contact)
-                    ->create();
-                
-                // Create 1-5 messages per conversation
-                $messageCount = rand(1, 5);
-                $messages = [];
-                
-                for ($j = 0; $j < $messageCount; $j++) {
-                    $isFromCustomer = $j === 0 || rand(0, 1); // First message is always from customer
-                    
-                    $messages[] = Message::factory()
-                        ->for($conversation)
-                        ->state([
-                            'type' => $isFromCustomer ? 'customer' : 'agent',
-                            'created_at' => now()->subDays(rand(0, 30))->subHours(rand(0, 23)),
-                        ])
-                        ->create();
-                }
-                
-                // Update conversation's last_activity_at to match the latest message
-                $latestMessage = collect($messages)->sortByDesc('created_at')->first();
-                $conversation->update([
-                    'last_activity_at' => $latestMessage->created_at,
-                ]);
-                
-                $conversations->push($conversation);
-            }
-        }
-        
-        // Create some specific test scenarios
-        $this->createTestScenarios($contacts);
-        
-        $this->command->info('Created ' . $conversations->count() . ' conversations with messages');
-        $this->command->info('Status distribution:');
-        
-        foreach ($statuses as $status) {
-            $count = Conversation::where('status', $status)->count();
-            $this->command->info("  {$status}: {$count}");
-        }
-        
-        $this->command->info('Priority distribution:');
-        foreach ($priorities as $priority) {
-            $count = Conversation::where('priority', $priority)->count();
-            $this->command->info("  {$priority}: {$count}");
-        }
-        
-        $unreadCount = Conversation::where('unread', true)->count();
-        $this->command->info("Unread conversations: {$unreadCount}");
+        $totalConversations = Conversation::count();
+        $this->command->info("Created {$totalConversations} realistic conversations from cbottelet@gmail.com");
     }
     
-    private function createTestScenarios($contacts): void
+    private function createPrivacyPolicyConversation(Contact $contact): void
     {
-        // Create some specific scenarios for testing filters
+        $conversation = Conversation::create([
+            'contact_id' => $contact->id,
+            'subject' => 'How to update privacy policy settings?',
+            'status' => 'resolved',
+            'priority' => 'medium',
+            'unread' => false,
+            'last_activity_at' => now()->subDays(5),
+            'created_at' => now()->subDays(5),
+        ]);
         
-        // 1. High priority urgent issue (unread)
-        Conversation::factory()
-            ->for($contacts->random())
-            ->state([
-                'subject' => 'URGENT: System Down - Need Immediate Help',
-                'status' => 'open',
-                'priority' => 'urgent',
-                'unread' => true,
-                'last_activity_at' => now()->subMinutes(5),
-            ])
-            ->has(
-                Message::factory()
-                    ->fromCustomer()
-                    ->state(['content' => 'Our entire system is down and we need immediate assistance. This is affecting all our users!'])
-            )
-            ->create();
+        Message::create([
+            'conversation_id' => $conversation->id,
+            'type' => 'customer',
+            'content' => 'Hi, I need to update our privacy policy in the system. I can\'t seem to find where to do this in the settings. Can you help me locate the privacy policy configuration?',
+            'created_at' => now()->subDays(5),
+        ]);
         
-        // 2. Resolved low priority issue (read)
-        Conversation::factory()
-            ->for($contacts->random())
-            ->state([
-                'subject' => 'Question about billing',
-                'status' => 'resolved',
-                'priority' => 'low',
-                'unread' => false,
-                'last_activity_at' => now()->subDays(2),
-            ])
-            ->has(
-                Message::factory()
-                    ->fromCustomer()
-                    ->state(['content' => 'I have a question about my last invoice.']),
-                'messages'
-            )
-            ->has(
-                Message::factory()
-                    ->fromAgent()
-                    ->state([
-                        'content' => 'Thanks for reaching out! I can help you with that billing question.',
-                        'created_at' => now()->subDays(2)->addHours(1)
-                    ]),
-                'messages'
-            )
-            ->create();
+        Message::create([
+            'conversation_id' => $conversation->id,
+            'type' => 'agent',
+            'content' => 'Hello Christian! I\'d be happy to help you with that. To update your privacy policy, navigate to Settings → Privacy Policy in your dashboard. There you can upload your privacy policy document and configure notification settings.',
+            'created_at' => now()->subDays(5)->addHours(2),
+        ]);
         
-        // 3. Awaiting customer response (read)
-        Conversation::factory()
-            ->for($contacts->random())
-            ->state([
-                'subject' => 'Feature request follow-up',
-                'status' => 'awaiting_customer',
-                'priority' => 'medium',
-                'unread' => false,
-                'last_activity_at' => now()->subHours(6),
-            ])
-            ->create();
+        Message::create([
+            'conversation_id' => $conversation->id,
+            'type' => 'customer',
+            'content' => 'Perfect! Found it. Thank you so much for the quick help.',
+            'created_at' => now()->subDays(5)->addHours(3),
+        ]);
+    }
+    
+    private function createBookingConversation(Contact $contact): void
+    {
+        $conversation = Conversation::create([
+            'contact_id' => $contact->id,
+            'subject' => 'Need help creating a booking',
+            'status' => 'resolved',
+            'priority' => 'medium',
+            'unread' => false,
+            'last_activity_at' => now()->subDays(7),
+            'created_at' => now()->subDays(7),
+        ]);
         
-        // 4. Multiple conversations from same contact
-        $frequentContact = $contacts->random();
-        for ($i = 0; $i < 3; $i++) {
-            Conversation::factory()
-                ->for($frequentContact)
-                ->state([
-                    'subject' => 'Issue #' . ($i+1) . ' - Various problems',
-                    'status' => collect(['open', 'awaiting_agent', 'closed'])->random(),
-                    'priority' => collect(['medium', 'high'])->random(),
-                ])
-                ->create();
-        }
+        Message::create([
+            'conversation_id' => $conversation->id,
+            'type' => 'customer',
+            'content' => 'Hi, I\'m new to the system and need to create a booking for a client. I found the booking page but I\'m not sure about the process. Can you walk me through it?',
+            'created_at' => now()->subDays(7),
+        ]);
+        
+        Message::create([
+            'conversation_id' => $conversation->id,
+            'type' => 'agent',
+            'content' => 'Hello Christian! I\'d be happy to help. Navigate to the Booking page and click "Create Booking". Fill in the customer information, service type, and date/time preferences. Then review and click "Confirm Booking". You\'ll receive a confirmation email.',
+            'created_at' => now()->subDays(7)->addMinutes(30),
+        ]);
+        
+        Message::create([
+            'conversation_id' => $conversation->id,
+            'type' => 'customer',
+            'content' => 'That was much easier than I expected! The booking is now in my calendar. Thanks for the clear instructions.',
+            'created_at' => now()->subDays(7)->addHours(1),
+        ]);
+    }
+    
+    private function createPasswordResetConversation(Contact $contact): void
+    {
+        $conversation = Conversation::create([
+            'contact_id' => $contact->id,
+            'subject' => 'Cannot reset password on app.crowdbook.com',
+            'status' => 'resolved',
+            'priority' => 'medium',
+            'unread' => false,
+            'last_activity_at' => now()->subDays(6),
+            'created_at' => now()->subDays(6),
+        ]);
+        
+        Message::create([
+            'conversation_id' => $conversation->id,
+            'type' => 'customer',
+            'content' => 'I\'m trying to reset my password on app.crowdbook.com but I\'m not receiving the reset email. I\'ve checked my spam folder too. Can you help me with this?',
+            'created_at' => now()->subDays(6),
+        ]);
+        
+        Message::create([
+            'conversation_id' => $conversation->id,
+            'type' => 'agent',
+            'content' => 'Hi Christian! Let me help you with that. First, make sure you\'re using the correct email address (cbottelet@gmail.com). Go to app.crowdbook.com, click "Forgot Password?", enter your email, and click "Send Reset Link". The email should arrive within a few minutes.',
+            'created_at' => now()->subDays(6)->addMinutes(20),
+        ]);
+        
+        Message::create([
+            'conversation_id' => $conversation->id,
+            'type' => 'customer',
+            'content' => 'Got it! The email came through this time. I was able to reset my password successfully. Thank you!',
+            'created_at' => now()->subDays(6)->addMinutes(35),
+        ]);
     }
 }
