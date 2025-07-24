@@ -59,6 +59,27 @@
               :is-active="activeConversation?.id === conversation.id"
               @click="selectConversation(conversation)"
             />
+            
+            <!-- Infinite Scroll Trigger -->
+            <div
+              v-if="hasMorePages"
+              ref="loadTrigger"
+              class="flex items-center justify-center p-4"
+            >
+              <div v-if="isLoadingMore" class="flex items-center space-x-2">
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                <span class="text-sm text-gray-500">Loading more conversations...</span>
+              </div>
+              <div v-else class="text-xs text-gray-400">
+                Scroll to load more...
+              </div>
+            </div>
+            <div
+              v-else-if="conversations.data.length > 0"
+              class="text-center py-6 text-gray-600"
+            >
+              You've reached the end!
+            </div>
           </div>
         </div>
       </div>
@@ -84,13 +105,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick, onMounted } from 'vue';
+import { ref, watch, nextTick, onMounted, onUnmounted, computed } from 'vue';
+import { router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import ConversationListItem from '@/components/helpdesk/ConversationListItem.vue';
 import ConversationView from '@/components/helpdesk/ConversationView.vue';
 import ConversationFilter from '@/components/helpdesk/ConversationFilter.vue';
 import { navigateToConversation } from '@/utils/inertiaNavigation';
 import { useConversationCollapseState } from '@/composables/useConversationCollapseState';
+
+const page = usePage();
+const loadTrigger = ref<HTMLElement | null>(null);
+const isLoadingMore = ref(false);
 
 // Define conversation type
 interface Conversation {
@@ -137,6 +163,71 @@ const props = defineProps<{
 
 // Initialize collapse state
 const { filterCollapsed, toggleFilterCollapse, replyFormCollapsed, toggleReplyFormCollapse } = useConversationCollapseState();
+
+// Computed property to check if there are more pages
+const hasMorePages = computed(() => {
+  return props.conversations.current_page < props.conversations.last_page;
+});
+
+// Load more conversations function for Index page
+const loadMoreConversations = () => {
+  if (isLoadingMore.value || !hasMorePages.value) return;
+  
+  isLoadingMore.value = true;
+  const nextPage = props.conversations.current_page + 1;
+  
+  console.log('Loading page:', nextPage, 'for Index');
+  
+  router.get('/helpdesk', {
+    page: nextPage
+  }, {
+    only: ['conversations'],
+    preserveState: true,
+    preserveScroll: true,
+    preserveUrl: true, // This prevents URL updates
+    onSuccess: () => {
+      isLoadingMore.value = false;
+      console.log('Successfully loaded page:', nextPage, 'for Index');
+    },
+    onError: (error) => {
+      isLoadingMore.value = false;
+      console.error('Failed to load more conversations:', error);
+    }
+  });
+};
+
+// Watch for changes in conversations data and merge new pages
+watch(() => page.props.conversations, (newConversations, oldConversations) => {
+  if (!newConversations || !oldConversations) return;
+  
+  // Check if this is an infinite scroll load (new page > old page)
+  if (newConversations.current_page > oldConversations.current_page) {
+    console.log('Merging conversations in Index:', {
+      oldPage: oldConversations.current_page,
+      newPage: newConversations.current_page,
+      oldDataLength: oldConversations.data?.length || 0,
+      newDataLength: newConversations.data?.length || 0
+    });
+    
+    // Merge the new conversations with the existing ones
+    const existingIds = new Set((oldConversations.data || []).map(c => c.id));
+    const newData = (newConversations.data || []).filter(c => !existingIds.has(c.id));
+    
+    if (newData.length > 0) {
+      // Update the conversations data by merging
+      const mergedConversations = {
+        ...newConversations,
+        data: [...(oldConversations.data || []), ...newData]
+      };
+      
+      // Update the page props directly to trigger reactivity
+      Object.assign(page.props.conversations, mergedConversations);
+    }
+  }
+}, { deep: true });
+
+// Intersection Observer for infinite scroll
+let observer: IntersectionObserver | null = null;
 
 // Local state
 const activeConversation = ref<Conversation | null>(null);
@@ -219,6 +310,39 @@ onMounted(() => {
   // If there are conversations, select the first one by default
   if (props.conversations.data.length > 0) {
     selectConversation(props.conversations.data[0]);
+  }
+  
+  // Set up intersection observer for infinite scroll
+  if (loadTrigger.value) {
+    observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && hasMorePages.value && !isLoadingMore.value) {
+            loadMoreConversations();
+          }
+        });
+      },
+      {
+        rootMargin: '100px', // Load when 100px away from trigger
+        threshold: 0.1
+      }
+    );
+    
+    observer.observe(loadTrigger.value);
+  }
+});
+
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect();
+  }
+});
+
+// Watch for loadTrigger changes to re-observe
+watch(loadTrigger, (newTrigger, oldTrigger) => {
+  if (observer) {
+    if (oldTrigger) observer.unobserve(oldTrigger);
+    if (newTrigger) observer.observe(newTrigger);
   }
 });
 </script>

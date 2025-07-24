@@ -34,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
         Date::use(CarbonImmutable::class);
         Http::preventStrayRequests();
         $this->app->singleton(EmailService::class, PostmarkEmailService::class);
+        $this->app->singleton(\App\Services\FileUploadService::class);
     }
 
     /**

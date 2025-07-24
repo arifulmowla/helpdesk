@@ -19,6 +19,8 @@ class DatabaseSeeder extends Seeder
             ContactSeeder::class,
             ConversationSeeder::class,
             MessageSeeder::class,
+            TagSeeder::class,
+            KnowledgeBaseSeeder::class,
         ]);
     }
 }
