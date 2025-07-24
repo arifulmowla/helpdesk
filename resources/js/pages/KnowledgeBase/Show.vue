@@ -13,13 +13,22 @@
     </div>
 
     <!-- Related articles sidebar -->
-    <aside class="w-60">
-      <h3 class="text-lg font-semibold mb-2">Related Articles</h3>
-      <ul>
-        <li v-for="related in relatedArticles" :key="related.slug">
-          <TextLink :href="`/articles/${related.slug}`">{{ related.title }}</TextLink>
-        </li>
-      </ul>
+    <aside class="w-80 space-y-6">
+      <!-- AI Assistant -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">AI Assistant</h3>
+        <AIAnswerGenerator />
+      </div>
+      
+      <!-- Related Articles -->
+      <div>
+        <h3 class="text-lg font-semibold mb-2">Related Articles</h3>
+        <ul class="space-y-1">
+          <li v-for="related in relatedArticles" :key="related.slug">
+            <TextLink :href="`/articles/${related.slug}`">{{ related.title }}</TextLink>
+          </li>
+        </ul>
+      </div>
     </aside>
   </div>
 </template>
@@ -29,6 +38,7 @@ import { computed } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import TiptapEditor from '@/components/TiptapEditor.vue';
 import TextLink from '@/components/TextLink.vue';
+import AIAnswerGenerator from '@/components/AIAnswerGenerator.vue';
 
 interface Article {
   title: string;

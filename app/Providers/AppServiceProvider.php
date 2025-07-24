@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Http;
+use App\Models\KnowledgeBaseArticle;
+use App\Observers\KnowledgeBaseArticleObserver;
 use DB;
 
 class AppServiceProvider extends ServiceProvider
@@ -32,7 +34,9 @@ class AppServiceProvider extends ServiceProvider
         Vite::useAggressivePrefetching();
 
         Date::use(CarbonImmutable::class);
-        Http::preventStrayRequests();
+        // Allow HTTP requests to OpenAI API for AI features
+        Http::preventStrayRequests(false); // Disable for now to allow OpenAI API calls
+        // TODO: Re-enable with proper allowlist once AI features are stable
         $this->app->singleton(EmailService::class, PostmarkEmailService::class);
         $this->app->singleton(\App\Services\FileUploadService::class);
     }
@@ -42,6 +46,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Register model observers
+        KnowledgeBaseArticle::observe(KnowledgeBaseArticleObserver::class);
     }
 }

@@ -13,19 +13,20 @@ class ContactData extends Data
         public string $id,
         public string $name,
         public string $email,
-        public ?CompanyData $company,
-        public string $created_at,
+        public ?array $company,
     ) {
     }
 
     public static function fromModel(Contact $contact): self
     {
         return new self(
-            id: $contact->id,
+            id: $contact->getKey(),
             name: $contact->name,
             email: $contact->email,
-            company: $contact->company ? CompanyData::fromModel($contact->company) : null,
-            created_at: $contact->created_at->format('Y-m-d H:i:s'),
+            company: $contact->company ? [
+                'id' => $contact->company->id,
+                'name' => $contact->company->name,
+            ] : null,
         );
     }
 }

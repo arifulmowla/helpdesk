@@ -1,8 +1,13 @@
 <template>
   <div class="flex flex-col gap-6 p-6">
     <!-- Search Header -->
-    <div class="space-y-4">
+    <div class="space-y-6">
       <h1 class="text-3xl font-bold">Knowledge Base</h1>
+      
+      <!-- AI Assistant -->
+      <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-200">
+        <AIAnswerGenerator />
+      </div>
       
       <!-- Search Bar -->
       <div class="max-w-md">
@@ -141,6 +146,7 @@ import CardContent from '@/components/ui/card/CardContent.vue';
 import CardFooter from '@/components/ui/card/CardFooter.vue';
 import CardHeader from '@/components/ui/card/CardHeader.vue';
 import CardTitle from '@/components/ui/card/CardTitle.vue';
+import AIAnswerGenerator from '@/components/AIAnswerGenerator.vue';
 
 interface Article {
   id: string;

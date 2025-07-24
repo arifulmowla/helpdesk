@@ -43,6 +43,19 @@
             {{ user.name }}
           </option>
         </select>
+        <button
+          @click="generateAIResponse"
+          :disabled="isGeneratingAI"
+          class="flex items-center gap-1 px-3 py-1 bg-primary text-primary-foreground rounded-md text-xs hover:bg-primary/90 disabled:opacity-50"
+        >
+          <svg v-if="isGeneratingAI" xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+          </svg>
+          {{ isGeneratingAI ? 'Generating...' : 'AI Assistant' }}
+        </button>
       </div>
 
       <!-- Status and Priority Tags -->
@@ -201,6 +214,8 @@
         </div>
       </div>
     </div>
+
+
   </div>
 </template>
 
@@ -211,7 +226,7 @@ import { useConversationCollapseState } from '@/composables/useConversationColla
 import CustomerBubble from './bubbles/CustomerBubble.vue';
 import AgentBubble from './bubbles/AgentBubble.vue';
 import InternalNoteBubble from './bubbles/InternalNoteBubble.vue';
-import TiptapEditor from '../TiptapEditor.vue';
+import TiptapEditor from '@/components/TiptapEditor.vue';
 import { Tag } from '@/components/ui/tag';
 // Import generated types
 import '@types/generated.d';
@@ -265,6 +280,7 @@ const internalNote = ref('');
 const status = ref(props.conversation.status);
 const priority = ref(props.conversation.priority);
 const showMoreMenu = ref(false);
+const isGeneratingAI = ref(false);
 const replyEditor = ref<InstanceType<typeof TiptapEditor> | null>(null);
 const internalEditor = ref<InstanceType<typeof TiptapEditor> | null>(null);
 const isReplyEmpty = ref(true);
@@ -407,6 +423,88 @@ function assignToUser() {
       selectedUser.value = props.conversation.assigned_to?.id || '';
     }
   });
+}
+
+async function generateAIResponse() {
+  if (isGeneratingAI.value) return;
+  
+  // Get the latest customer message
+  const customerMessages = props.messages.filter(m => m.type === 'customer');
+  if (customerMessages.length === 0) {
+    console.warn('No customer messages found');
+    return;
+  }
+  
+  const latestMessage = customerMessages[customerMessages.length - 1];
+  // Strip HTML tags and get plain text
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = latestMessage.content;
+  const query = tempDiv.textContent || tempDiv.innerText || '';
+  
+  if (!query.trim()) {
+    console.warn('Latest customer message is empty');
+    return;
+  }
+  
+  // Ensure reply tab is active and form is expanded
+  activeTab.value = 'reply';
+  if (!isFormExpanded.value) {
+    toggleFormExpanded();
+  }
+  
+  isGeneratingAI.value = true;
+  
+  try {
+    const requestData = {
+      query: query.trim(),
+      conversation_id: props.conversation.id,
+      conversation_context: {
+        subject: props.conversation.subject,
+        contact: props.conversation.contact
+      },
+      messages: props.messages
+    };
+    
+    const response = await fetch(route('ai.answer.generate'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+      },
+      body: JSON.stringify(requestData)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success && data.answer) {
+      console.log('AI Response received:', data.answer);
+      console.log('Reply editor ref:', replyEditor.value);
+      
+      // Clear the reply editor and set the AI response
+      replyEditor.value?.clearContent();
+      
+      // Convert plain text with line breaks to HTML for TipTap
+      const htmlContent = data.answer.replace(/\n/g, '<br>');
+      console.log('HTML content for TipTap:', htmlContent);
+      
+      // Use the correct TipTap API to set content
+      replyEditor.value?.editor?.commands.setContent(htmlContent);
+      replyContent.value = data.answer;
+      
+      console.log('Content set in editor. Current replyContent:', replyContent.value);
+    } else {
+      throw new Error(data.error || 'Failed to generate AI response');
+    }
+  } catch (error) {
+    console.error('AI generation failed:', error);
+    // You could show a toast notification here
+  } finally {
+    isGeneratingAI.value = false;
+  }
 }
 
 // Scroll to bottom when messages change

@@ -35,16 +35,6 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
         Route::post('/conversations/{conversation}/assign', [ConversationController::class, 'assign'])->name('conversations.assign');
     });
 
-    // Contact and Company routes
-    Route::prefix('contacts')->group(function () {
-        Route::get('/', [App\Http\Controllers\ContactController::class, 'index'])->name('contacts.index');
-        Route::get('/{contact}', [App\Http\Controllers\ContactController::class, 'show'])->name('contacts.show');
-    });
-
-    Route::prefix('companies')->group(function () {
-        Route::get('/', [App\Http\Controllers\CompanyController::class, 'index'])->name('companies.index');
-        Route::get('/{company}', [App\Http\Controllers\CompanyController::class, 'show'])->name('companies.show');
-    });
 
     // Admin Knowledge Base routes (requires manage-knowledge-base permission)
     Route::prefix('admin/knowledge-base')->group(function () {
@@ -73,6 +63,13 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
         Route::put('/{tag}', [App\Http\Controllers\Admin\TagController::class, 'update'])->name('admin.tags.update');
         Route::delete('/{tag}', [App\Http\Controllers\Admin\TagController::class, 'destroy'])->name('admin.tags.destroy');
         Route::get('/list', [App\Http\Controllers\Admin\TagController::class, 'list'])->name('admin.tags.list');
+    });
+
+    // AI Answer Generation routes
+    Route::prefix('ai')->group(function () {
+        Route::post('/answer', [App\Http\Controllers\AIAnswerController::class, 'generate'])->name('ai.answer.generate');
+        Route::post('/answer/stream', [App\Http\Controllers\AIAnswerController::class, 'stream'])->name('ai.answer.stream');
+        Route::post('/sources', [App\Http\Controllers\AIAnswerController::class, 'sources'])->name('ai.sources');
     });
 
 });
