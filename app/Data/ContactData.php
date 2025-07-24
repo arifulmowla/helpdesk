@@ -13,7 +13,7 @@ class ContactData extends Data
         public string $id,
         public string $name,
         public string $email,
-        public ?string $company,
+        public ?CompanyData $company,
         public string $created_at,
     ) {
     }
@@ -24,7 +24,7 @@ class ContactData extends Data
             id: $contact->id,
             name: $contact->name,
             email: $contact->email,
-            company: $contact->company,
+            company: $contact->company ? CompanyData::fromModel($contact->company) : null,
             created_at: $contact->created_at->format('Y-m-d H:i:s'),
         );
     }

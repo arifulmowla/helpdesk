@@ -53,25 +53,71 @@
     <!-- Status Filter -->
     <div class="space-y-2">
       <label class="text-sm font-medium text-gray-700">Status</label>
-      <FilterDropdown
-        :selected-items="filters.status"
-        :options="filterOptions?.statuses || []"
-        :stats="stats?.by_status"
-        placeholder="Select Status"
-        @toggle="toggleStatus"
-      />
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <Button variant="outline" class="w-full justify-between">
+            <span v-if="!filters.status || filters.status.length === 0">Select Status</span>
+            <span v-else-if="filters.status.length === 1">
+              <Tag :value="getStatusObject(filters.status[0])" size="sm" class="mr-2" />
+              {{ getStatusLabel(filters.status[0]) }}
+            </span>
+            <span v-else>{{ filters.status.length }} selected</span>
+            <Icon name="chevron-down" class="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent class="w-56">
+          <DropdownMenuItem
+            v-for="status in filterOptions?.statuses || []"
+            :key="status.value"
+            @click="toggleStatus(status.value)"
+            class="flex items-center cursor-pointer"
+          >
+            <div class="flex items-center w-4 h-4 mr-2">
+              <svg v-if="filters.status?.includes(status.value)" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <Tag :value="status" size="sm" class="mr-2" />
+            {{ status.label }}
+            <span class="ml-auto text-xs text-gray-500">({{ stats?.by_status?.[status.value] || 0 }})</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
 
     <!-- Priority Filter -->
     <div class="space-y-2">
       <label class="text-sm font-medium text-gray-700">Priority</label>
-      <FilterDropdown
-        :selected-items="filters.priority"
-        :options="filterOptions?.priorities || []"
-        :stats="stats?.by_priority"
-        placeholder="Select Priority"
-        @toggle="togglePriority"
-      />
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <Button variant="outline" class="w-full justify-between">
+            <span v-if="!filters.priority || filters.priority.length === 0">Select Priority</span>
+            <span v-else-if="filters.priority.length === 1">
+              <Tag :value="getPriorityObject(filters.priority[0])" size="sm" class="mr-2" />
+              {{ getPriorityLabel(filters.priority[0]) }}
+            </span>
+            <span v-else>{{ filters.priority.length }} selected</span>
+            <Icon name="chevron-down" class="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent class="w-56">
+          <DropdownMenuItem
+            v-for="priority in filterOptions?.priorities || []"
+            :key="priority.value"
+            @click="togglePriority(priority.value)"
+            class="flex items-center cursor-pointer"
+          >
+            <div class="flex items-center w-4 h-4 mr-2">
+              <svg v-if="filters.priority?.includes(priority.value)" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <Tag :value="priority" size="sm" class="mr-2" />
+            {{ priority.label }}
+            <span class="ml-auto text-xs text-gray-500">({{ stats?.by_priority?.[priority.value] || 0 }})</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
 
     <!-- Clear All Filters -->
@@ -96,21 +142,19 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
-// Simple debounce implementation to avoid lodash dependency
-function createDebounce<T extends (...args: any[]) => void>(func: T, wait: number): T {
-  let timeout: NodeJS.Timeout | null = null;
-  return ((...args: any[]) => {
-    if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  }) as T;
-}
+import { debounce } from 'lodash';
 import { useConversationCollapseState } from '@/composables/useConversationCollapseState';
 import { navigateWithFilters } from '@/utils/inertiaNavigation';
 import Button from '@/components/ui/button/Button.vue';
 import Input from '@/components/ui/input/Input.vue';
 import Icon from '@/components/Icon.vue';
-import { defineAsyncComponent } from 'vue';
-const FilterDropdown = defineAsyncComponent(() => import('@/components/ui/filter/FilterDropdown.vue'));
+import { Tag } from '@/components/ui/tag';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
 // Import generated types
 import '@types/generated.d';
 
@@ -124,7 +168,7 @@ const props = defineProps<{
 }>();
 
 // Initialize collapse state
-const { filterCollapsed, toggleFilterCollapse } = useConversationCollapseState(props.conversationId);
+const { filterCollapsed, toggleFilterCollapse, persistState } = useConversationCollapseState(props.conversationId);
 
 // Reactive filters state
 const filters = reactive<{
@@ -150,12 +194,17 @@ const hasActiveFilters = computed(() => {
 });
 
 // Debounced search
-const debouncedSearch = createDebounce(() => {
+const debouncedSearch = debounce(() => {
   filters.search = searchQuery.value;
   updateFilters();
 }, 300);
 
 // Methods
+function capitalizeFirst(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1).replace('_', ' ');
+}
+
+
 function toggleUnread() {
   filters.unread = filters.unread ? undefined : true;
   updateFilters();
@@ -194,6 +243,7 @@ function togglePriority(priorityValue: string) {
   updateFilters();
 }
 
+
 function clearAllFilters() {
   filters.search = undefined;
   filters.status = undefined;
@@ -206,6 +256,23 @@ function clearAllFilters() {
 function updateFilters() {
   // Use the navigation utility that handles state persistence
   navigateWithFilters('/helpdesk', filters);
+}
+
+// Helper methods to get objects for tags
+function getStatusObject(statusValue: string) {
+  return props.filterOptions?.statuses?.find(s => s.value === statusValue) || { value: statusValue, label: capitalizeFirst(statusValue), color: null };
+}
+
+function getPriorityObject(priorityValue: string) {
+  return props.filterOptions?.priorities?.find(p => p.value === priorityValue) || { value: priorityValue, label: capitalizeFirst(priorityValue), color: null };
+}
+
+function getStatusLabel(statusValue: string): string {
+  return getStatusObject(statusValue).label;
+}
+
+function getPriorityLabel(priorityValue: string): string {
+  return getPriorityObject(priorityValue).label;
 }
 
 // Watch for prop changes to sync filters

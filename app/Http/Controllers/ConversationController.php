@@ -7,6 +7,7 @@ use App\Data\ConversationFilterData;
 use App\Data\MessageData;
 use App\Filters\ConversationFilter;
 use App\Models\Conversation;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Inertia\Inertia;
@@ -23,7 +24,7 @@ class ConversationController extends Controller
         $filters = $request->only(['status', 'priority', 'unread', 'search', 'contact_id']);
         
         // Get all conversations for the sidebar with filters applied
-        $allConversations = Conversation::with('contact')
+        $allConversations = Conversation::with(['contact.company', 'assignedTo'])
             ->filter($filters)
             ->orderBy('last_activity_at', 'desc')
             ->paginate(20);
@@ -38,8 +39,8 @@ class ConversationController extends Controller
         $messages = [];
         
         if ($conversation) {
-            // Load the conversation with its contact and messages with nested conversation.contact
-            $conversation->load('contact', 'messages.conversation.contact');
+            // Load the conversation with its contact, assignedTo and messages with nested conversation.contact
+            $conversation->load(['contact.company', 'assignedTo', 'messages.conversation.contact.company']);
             $conversationData = ConversationData::from($conversation);
             $messages = MessageData::collect($conversation->messages);
         }
@@ -63,6 +64,7 @@ class ConversationController extends Controller
                 'current' => $filters,
                 'options' => ConversationFilterData::create(),
             ],
+            'users' => User::select(['id', 'name', 'email'])->get()->toArray(),
         ]);
     }
 
@@ -83,14 +85,32 @@ class ConversationController extends Controller
     /**
      * Mark a conversation as unread
      */
-    public function markAsUnread(Conversation $conversation): JsonResponse
+    public function markAsUnread(Conversation $conversation)
     {
         $conversation->markAsUnread();
         
-        return response()->json([
-            'success' => true,
-            'message' => 'Conversation marked as unread',
-            'conversation' => ConversationData::from($conversation->fresh(['contact']))
+        return redirect()->back()->with('success', 'Conversation marked as unread');
+    }
+
+    /**
+     * Assign a conversation to a user
+     */
+    public function assign(Request $request, Conversation $conversation)
+    {
+        $validated = $request->validate([
+            'user_id' => ['nullable', 'string', 'exists:users,id']
         ]);
+
+        $conversation->update([
+            'assigned_to' => $validated['user_id']
+        ]);
+
+        $conversation->load(['contact', 'assignedTo']);
+
+        return redirect()->back()->with('success', 
+            $validated['user_id'] 
+                ? 'Conversation assigned to ' . $conversation->assignedTo->name
+                : 'Conversation assignment removed'
+        );
     }
 }

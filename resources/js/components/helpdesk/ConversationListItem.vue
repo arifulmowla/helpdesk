@@ -23,15 +23,24 @@
             {{ conversation.subject }}
           </h3>
         </div>
-        <span class="text-xs text-gray-500 ml-2">
-          {{ formatDate(conversation.last_activity_at) }}
-        </span>
+        <div class="flex items-center space-x-2 text-xs text-gray-500 ml-2">
+          <span class="px-2 py-1 rounded bg-gray-100 font-mono">
+            #{{ conversation.case_number }}
+          </span>
+          <span>
+            {{ formatDate(conversation.last_activity_at) }}
+          </span>
+        </div>
       </div>
 
       <div class="flex items-center text-sm text-gray-600 mt-1">
         <span class="truncate">{{ conversation.contact.name }}</span>
         <span class="mx-1">•</span>
-        <span class="truncate text-gray-500">{{ conversation.contact.company || 'No company' }}</span>
+        <span class="truncate text-gray-500">{{ conversation.contact.company?.name || 'No company' }}</span>
+        <template v-if="conversation.assigned_to">
+          <span class="mx-1">•</span>
+          <span class="truncate text-blue-600 text-xs">Assigned to {{ conversation.assigned_to.name }}</span>
+        </template>
       </div>
 
       <div class="flex items-center mt-2 space-x-2">

@@ -13,41 +13,36 @@
         </div>
         <div class="flex items-center gap-2">
           <span class="px-2 py-1 text-xs font-medium rounded-md bg-status-open text-foreground">
-            #{{ conversation.id.substring(0, 8) }}
+            #{{ conversation.case_number }}
           </span>
 
-          <!-- More Actions Dropdown -->
-          <div class="relative">
-            <button
-              @click.stop="toggleMoreMenu"
-              class="p-2 hover:bg-gray-100 rounded-md transition-colors"
-              title="More actions"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01" />
-              </svg>
-            </button>
-
-            <!-- Dropdown Menu -->
-            <div
-              v-if="showMoreMenu"
-              @click.stop
-              class="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50"
-            >
-              <div class="py-1">
-                <button
-                  @click="markAsUnread"
-                  class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 7.89a2 2 0 002.83 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  Mark as unread
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="flex items-center gap-2 mb-4">
+        <button
+          @click="markAsUnread"
+          class="px-3 py-1 bg-muted text-muted-foreground rounded-md text-xs hover:bg-muted/50"
+        >
+          Mark as Unread
+        </button>
+        <select
+          v-model="selectedUser"
+          @change="assignToUser"
+          class="px-3 py-1 bg-muted text-muted-foreground rounded-md text-xs"
+        >
+          <option value="">
+            {{ conversation.assigned_to ? 'Remove Assignee' : 'Assign to...' }}
+          </option>
+          <option
+            v-for="user in users"
+            :key="user.id"
+            :value="user.id"
+          >
+            {{ user.name }}
+          </option>
+        </select>
       </div>
 
       <!-- Status and Priority Tags -->
@@ -142,7 +137,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
-            Reply to Customer
+            Reply to Contact
           </button>
           <button
             :class="`flex items-center gap-2 flex-1 transition-all px-3 py-2 rounded-md text-sm ${
@@ -164,7 +159,7 @@
           <TiptapEditor
             ref="replyEditor"
             v-model="replyContent"
-            placeholder="Type your reply to the customer..."
+            placeholder="Type your reply to the contact..."
             @update:isEmpty="isReplyEmpty = $event"
             :onSubmit="handleSendReply"
           />
@@ -244,6 +239,11 @@ const props = defineProps<{
     message_owner_name?: string;
     agent_name?: string;
   }>;
+  users: Array<{
+    id: string;
+    name: string;
+    email: string;
+  }>;
 }>();
 
 // Initialize collapse state for this specific conversation
@@ -269,6 +269,7 @@ const replyEditor = ref<InstanceType<typeof TiptapEditor> | null>(null);
 const internalEditor = ref<InstanceType<typeof TiptapEditor> | null>(null);
 const isReplyEmpty = ref(true);
 const isInternalNoteEmpty = ref(true);
+const selectedUser = ref(props.conversation.assigned_to?.id || '');
 // Use persistent collapse state instead of local ref
 const isFormExpanded = computed(() => !replyFormCollapsed.value);
 
@@ -370,7 +371,7 @@ function closeMoreMenu() {
 }
 
 function markAsUnread() {
-  router.post(`/conversations/${props.conversation.id}/unread`, {}, {
+  router.post(`/helpdesk/conversations/${props.conversation.id}/unread`, {}, {
     preserveScroll: true,
     preserveState: true,
     onSuccess: () => {
@@ -386,6 +387,24 @@ function markAsUnread() {
     },
     onError: (errors) => {
       console.error('Error marking conversation as unread:', errors);
+    }
+  });
+}
+
+function assignToUser() {
+  router.post(`/helpdesk/conversations/${props.conversation.id}/assign`, {
+    user_id: selectedUser.value || null
+  }, {
+    preserveScroll: true,
+    preserveState: true,
+    onSuccess: () => {
+      // Reset the select to show updated state
+      selectedUser.value = selectedUser.value;
+    },
+    onError: (errors) => {
+      console.error('Error assigning conversation:', errors);
+      // Reset the select on error
+      selectedUser.value = props.conversation.assigned_to?.id || '';
     }
   });
 }

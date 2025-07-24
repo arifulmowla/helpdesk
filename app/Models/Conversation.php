@@ -42,6 +42,8 @@ class Conversation extends Model
         'last_activity_at',
         'unread',
         'read_at',
+        'case_number',
+        'assigned_to',
     ];
 
     /**
@@ -65,6 +67,14 @@ class Conversation extends Model
     public function contact(): BelongsTo
     {
         return $this->belongsTo(Contact::class);
+    }
+
+    /**
+     * Get the user assigned to the conversation.
+     */
+    public function assignedTo(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     /**
@@ -137,5 +147,34 @@ class Conversation extends Model
         return $query->with(['contact', 'messages' => function ($query) {
             $query->orderBy('created_at', 'desc')->limit(1);
         }]);
+    }
+
+    /**
+     * Boot the model and auto-generate case numbers
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($conversation) {
+            if (empty($conversation->case_number)) {
+                $conversation->case_number = static::generateCaseNumber();
+            }
+        });
+    }
+
+    /**
+     * Generate a unique case number
+     */
+    public static function generateCaseNumber(): string
+    {
+        do {
+            // Generate 8-character case number: 2 letters + 6 digits
+            $letters = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 2));
+            $numbers = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
+            $caseNumber = $letters . $numbers;
+        } while (static::where('case_number', $caseNumber)->exists());
+
+        return $caseNumber;
     }
 }

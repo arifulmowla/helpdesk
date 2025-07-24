@@ -25,6 +25,18 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
         Route::patch('/{conversation}/status', [StatusController::class, 'update'])->name('helpdesk.status.update');
         Route::post('/conversations/{conversation}/read', [ConversationController::class, 'markAsRead'])->name('conversations.read');
         Route::post('/conversations/{conversation}/unread', [ConversationController::class, 'markAsUnread'])->name('conversations.unread');
+        Route::post('/conversations/{conversation}/assign', [ConversationController::class, 'assign'])->name('conversations.assign');
+    });
+    
+    // Contact and Company routes
+    Route::prefix('contacts')->group(function () {
+        Route::get('/', [App\Http\Controllers\ContactController::class, 'index'])->name('contacts.index');
+        Route::get('/{contact}', [App\Http\Controllers\ContactController::class, 'show'])->name('contacts.show');
+    });
+    
+    Route::prefix('companies')->group(function () {
+        Route::get('/', [App\Http\Controllers\CompanyController::class, 'index'])->name('companies.index');
+        Route::get('/{company}', [App\Http\Controllers\CompanyController::class, 'show'])->name('companies.show');
     });
     
 });

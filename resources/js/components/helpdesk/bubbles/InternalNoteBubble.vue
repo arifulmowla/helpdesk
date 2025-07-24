@@ -22,9 +22,7 @@
       </div>
 
       <!-- Message Content -->
-      <div class="text-sm leading-relaxed whitespace-pre-wrap">
-        {{ message.content }}
-      </div>
+      <div class="text-sm leading-relaxed" v-html="message.content"></div>
       
       <!-- Internal note indicator -->
       <div class="mt-2 text-xs italic flex items-center" style="color: hsl(var(--secondary-fg, 45 60% 30%) / 0.8);">

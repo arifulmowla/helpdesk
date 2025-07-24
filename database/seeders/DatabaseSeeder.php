@@ -13,15 +13,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create an admin user
-        User::factory()->create([
-            'name' => 'Admin User',
-            'email' => 'admin@admin.com',
-            'password' => '123admin',
-        ]);
-        
         // Call our custom seeders in the correct order
         $this->call([
+            UserSeeder::class,
             ContactSeeder::class,
             ConversationSeeder::class,
             MessageSeeder::class,

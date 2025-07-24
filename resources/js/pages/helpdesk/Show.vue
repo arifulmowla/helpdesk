@@ -9,7 +9,7 @@
       </div>
     </template>
 
-    <div class="flex h-[calc(100vh-64px)]">
+    <div class="flex h-screen">
       <!-- Sidebar with conversation list -->
       <div class="w-80 border-r border-gray-200 h-full flex flex-col overflow-hidden">
         <div class="p-4 border-b border-gray-200 shrink-0">
@@ -92,6 +92,7 @@
           @status-updated="handleStatusUpdated"
           @priority-updated="handlePriorityUpdated"
           @conversation-updated="handleConversationUpdated"
+          :users="users"
         />
       </div>
     </div>
@@ -134,6 +135,11 @@ const props = defineProps<{
     current: Record<string, any>;
     options: App.Data.ConversationFilterData;
   };
+  users: Array<{
+    id: string;
+    name: string;
+    email: string;
+  }>;
 }>();
 
 // Initialize collapse state

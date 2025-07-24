@@ -6,9 +6,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Contact extends Model
+class Company extends Model
 {
     use HasFactory, HasUlids;
 
@@ -34,7 +33,9 @@ class Contact extends Model
     protected $fillable = [
         'name',
         'email',
-        'company_id',
+        'phone',
+        'address',
+        'website',
     ];
 
     /**
@@ -48,18 +49,10 @@ class Contact extends Model
     ];
 
     /**
-     * Get the conversations for the contact.
+     * Get the contacts for the company.
      */
-    public function conversations(): HasMany
+    public function contacts(): HasMany
     {
-        return $this->hasMany(Conversation::class);
-    }
-
-    /**
-     * Get the company that the contact belongs to.
-     */
-    public function company(): BelongsTo
-    {
-        return $this->belongsTo(Company::class);
+        return $this->hasMany(Contact::class);
     }
 }

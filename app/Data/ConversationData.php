@@ -14,6 +14,7 @@ class ConversationData extends Data
 {
     public function __construct(
         public string $id,
+        public string $case_number,
         public string $subject,
         public array $status,
         public array $priority,
@@ -22,6 +23,7 @@ class ConversationData extends Data
         public bool $unread,
         public ?string $read_at,
         public ContactData $contact,
+        public ?array $assigned_to,
         public Lazy|array $messages,
     ) {
     }
@@ -30,6 +32,7 @@ class ConversationData extends Data
     {
         return new self(
             id: $conversation->getKey(),
+            case_number: $conversation->getAttribute('case_number'),
             subject: $conversation->getAttribute('subject'),
             status: $conversation->status->toArray(),
             priority: $conversation->priority->toArray(),
@@ -38,6 +41,11 @@ class ConversationData extends Data
             unread: $conversation->getAttribute('unread'),
             read_at: $conversation->read_at?->format('Y-m-d H:i:s'),
             contact: ContactData::fromModel($conversation->contact),
+            assigned_to: $conversation->assignedTo ? [
+                'id' => $conversation->assignedTo->id,
+                'name' => $conversation->assignedTo->name,
+                'email' => $conversation->assignedTo->email,
+            ] : null,
             messages: Lazy::whenLoaded('messages', $conversation, fn () => MessageData::collect($conversation->messages)),
         );
     }

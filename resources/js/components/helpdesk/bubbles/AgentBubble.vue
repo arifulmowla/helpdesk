@@ -22,9 +22,7 @@
       </div>
 
       <!-- Message Content -->
-      <div class="text-sm leading-relaxed whitespace-pre-wrap">
-        {{ message.content }}
-      </div>
+      <div class="text-sm leading-relaxed" v-html="message.content"></div>
     </div>
   </div>
 </template>
