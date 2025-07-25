@@ -20,61 +20,6 @@ class AIAnswerService
     }
 
     /**
-     * Generate an AI-powered answer with streaming support
-     */
-    public function generateAnswerStream(string $query, ?array $conversationContext = null, ?array $messages = [], ?callable $onChunk = null): \Generator
-    {
-        try {
-            // Get relevant context from knowledge base
-            $context = $this->retrieveRelevantContext($query);
-            
-            // Build messages for the conversation
-            $aiMessages = $this->buildMessages($query, $context, $conversationContext, $messages);
-            
-            // Stream the response using direct OpenAI API
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . config('ai.openai.api_key'),
-                'Content-Type' => 'application/json',
-            ])->post('https://api.openai.com/v1/chat/completions', [
-                'model' => config('ai.openai.model'),
-                'messages' => [
-                    [
-                        'role' => 'system',
-                        'content' => $aiMessages['system']
-                    ],
-                    [
-                        'role' => 'user', 
-                        'content' => $aiMessages['user']
-                    ]
-                ],
-                'max_tokens' => config('ai.openai.max_tokens', 1000),
-                'temperature' => config('ai.openai.temperature', 0.7),
-                'stream' => true,
-            ]);
-
-            if (!$response->successful()) {
-                throw new Exception('OpenAI API request failed: ' . $response->body());
-            }
-
-            // For now, just return the complete response as a single chunk
-            // Full streaming implementation would require parsing SSE format
-            $data = $response->json();
-            $content = $data['choices'][0]['message']['content'] ?? '';
-            
-            if ($onChunk) {
-                $onChunk($content);
-            }
-            yield $content; // Generator must yield for proper return type
-        } catch (Exception $e) {
-            Log::error('AI answer generation failed', [
-                'query' => $query,
-                'error' => $e->getMessage()
-            ]);
-            throw $e;
-        }
-    }
-
-    /**
      * Generate a complete AI-powered answer (non-streaming)
      */
     public function generateAnswer(string $query, ?array $conversationContext = null, ?array $messages = []): string
@@ -82,10 +27,10 @@ class AIAnswerService
         try {
             // Get relevant context from knowledge base
             $context = $this->retrieveRelevantContext($query);
-            
+            dd($context);
             // Build messages for the conversation
             $aiMessages = $this->buildMessages($query, $context, $conversationContext, $messages);
-            
+
             // Generate response using direct OpenAI API
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . config('ai.openai.api_key'),
@@ -98,7 +43,7 @@ class AIAnswerService
                         'content' => $aiMessages['system']
                     ],
                     [
-                        'role' => 'user', 
+                        'role' => 'user',
                         'content' => $aiMessages['user']
                     ]
                 ],
@@ -111,7 +56,7 @@ class AIAnswerService
                 $errorData = $response->json();
                 $errorMessage = $errorData['error']['message'] ?? 'Unknown OpenAI API error';
                 $errorCode = $errorData['error']['code'] ?? null;
-                
+
                 Log::error('OpenAI API request failed', [
                     'status' => $response->status(),
                     'error_message' => $errorMessage,
@@ -119,12 +64,12 @@ class AIAnswerService
                     'full_response' => $errorBody,
                     'query' => substr($query, 0, 100) . '...'
                 ]);
-                
+
                 // Provide a helpful fallback for quota exceeded errors
                 if ($errorCode === 'insufficient_quota') {
                     return "I apologize, but the AI assistant is temporarily unavailable due to API quota limits. In the meantime, I'd be happy to help you manually. Could you please provide more details about your issue so I can assist you directly?";
                 }
-                
+
                 throw new Exception('OpenAI API Error: ' . $errorMessage);
             }
 
@@ -148,7 +93,7 @@ class AIAnswerService
         try {
             // Generate embeddings for the query
             $queryEmbedding = $this->embeddingService->generateEmbedding($query);
-            
+
             if (!$queryEmbedding) {
                 Log::warning('Failed to generate embeddings for query', ['query' => $query]);
                 return collect();
@@ -168,25 +113,26 @@ class AIAnswerService
 
             // Filter by similarity threshold
             $relevantMatches = array_filter($matches, function ($match) {
-                return ($match['score'] ?? 0) >= config('ai.rag.similarity_threshold', 0.7);
+                return ($match['score'] ?? 0) >= config('ai.rag.similarity_threshold', 0.4);
             });
 
             // Get article IDs from the matches
             $articleIds = array_map(function ($match) {
                 return $match['metadata']['article_id'] ?? null;
             }, $relevantMatches);
-
             $articleIds = array_filter($articleIds);
 
             if (empty($articleIds)) {
                 return collect();
             }
 
+
             // Fetch the actual articles from database
             return KnowledgeBaseArticle::whereIn('id', $articleIds)
                 ->where('is_published', true)
                 ->get(['id', 'title', 'body', 'excerpt', 'slug'])
                 ->map(function ($article) {
+                    dd($article->body);
                     return [
                         'id' => $article->id,
                         'title' => $article->title,
@@ -223,7 +169,7 @@ class AIAnswerService
      */
     protected function buildSystemPrompt(Collection $context, ?array $conversationContext = null, ?array $messages = []): string
     {
-        $basePrompt = "You are a professional Customer Service specialist AI assistant for a helpdesk system. "
+        $basePrompt = "You are a professional Customer Service specialist AI assistant for Grand a Property management system. "
             . "Your role is to provide accurate, helpful, and empathetic responses to customer inquiries based on the knowledge base content and conversation context provided. "
             . "Always be concise, clear, professional, and customer-focused in your responses.\n\n";
 
@@ -245,7 +191,7 @@ class AIAnswerService
             $basePrompt .= "Recent conversation history:\n";
             $messageCount = min(5, count($messages)); // Limit to last 5 messages
             $recentMessages = array_slice($messages, -$messageCount);
-            
+
             foreach ($recentMessages as $message) {
                 $sender = $message['type'] === 'customer' ? 'Customer' : 'Agent';
                 $content = strip_tags($message['content'] ?? '');
@@ -262,7 +208,7 @@ class AIAnswerService
         }
 
         $contextText = "Here are the relevant knowledge base articles to help answer the user's question:\n\n";
-        
+
         foreach ($context as $index => $article) {
             $contextText .= "Article " . ($index + 1) . " - {$article['title']}:\n";
             $contextText .= substr($article['content'], 0, config('ai.rag.max_context_length', 4000));
@@ -287,11 +233,11 @@ class AIAnswerService
         // For helpdesk responses, we want to focus on the latest customer message
         // but also provide context about what they're asking
         $userPrompt = "Customer's latest message/question: {$query}\n\n";
-        
+
         $userPrompt .= "Please provide a helpful, professional response that addresses the customer's question. ";
         $userPrompt .= "Use the knowledge base articles and conversation context to provide accurate information. ";
         $userPrompt .= "If you need to reference specific steps or procedures, be precise and clear.";
-        
+
         return $userPrompt;
     }
 

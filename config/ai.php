@@ -57,7 +57,7 @@ return [
     */
     'rag' => [
         'max_context_articles' => env('RAG_MAX_CONTEXT_ARTICLES', 5),
-        'similarity_threshold' => env('RAG_SIMILARITY_THRESHOLD', 0.7),
+        'similarity_threshold' => env('RAG_SIMILARITY_THRESHOLD', 0.4),
         'max_context_length' => env('RAG_MAX_CONTEXT_LENGTH', 4000),
     ],
 ];

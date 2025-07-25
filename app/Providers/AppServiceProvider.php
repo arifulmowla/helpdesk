@@ -26,9 +26,9 @@ class AppServiceProvider extends ServiceProvider
         Model::shouldBeStrict();
 
         // Force HTTPS when APP_URL is HTTPS
-        //if (str_starts_with(env('APP_URL', ''), 'https://')) {
+        if (str_starts_with(config('app.url', ''), 'https://')) {
             URL::forceScheme('https');
-        //}
+        }
 
         Model::automaticallyEagerLoadRelationships();
         Vite::useAggressivePrefetching();

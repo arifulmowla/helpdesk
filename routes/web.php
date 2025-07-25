@@ -68,7 +68,6 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
     // AI Answer Generation routes
     Route::prefix('ai')->group(function () {
         Route::post('/answer', [App\Http\Controllers\AIAnswerController::class, 'generate'])->name('ai.answer.generate');
-        Route::post('/answer/stream', [App\Http\Controllers\AIAnswerController::class, 'stream'])->name('ai.answer.stream');
         Route::post('/sources', [App\Http\Controllers\AIAnswerController::class, 'sources'])->name('ai.sources');
     });
 

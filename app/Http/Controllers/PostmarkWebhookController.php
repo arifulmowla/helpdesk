@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Type;
 use App\Models\Contact;
 use App\Models\Conversation;
 use App\Models\Message;
@@ -148,7 +149,7 @@ class PostmarkWebhookController extends Controller
 
         return Message::create([
             'conversation_id' => $conversation->id,
-            'type' => 'customer',
+            'type' => Type::CUSTOMER,
             'content' => $content,
             'message_id' => $emailData['message_id'],
             'in_reply_to' => $emailData['in_reply_to'],
