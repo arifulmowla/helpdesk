@@ -482,21 +482,51 @@ async function generateAIResponse() {
     }
     
     const data = await response.json();
+    console.log('[AI Debug] Full response structure:', data);
     
-    if (data.success && data.answer) {
-      // Clear the reply editor and set the AI response
-      replyEditor.value?.clearContent();
+    // Handle the nested data structure correctly
+    if (data.success && data.data && data.data.answer) {
+      console.log('[AI Debug] Response received successfully:', data.data.answer.substring(0, 50) + '...');
       
-      // Convert plain text with line breaks to HTML for TipTap
-      const htmlContent = data.answer.replace(/\n/g, '<br>');
+      // DIRECT APPROACH: Set the v-model value first
+      replyContent.value = data.data.answer;
       
-      // Use the correct TipTap API to set content
-      replyEditor.value?.editor?.commands.setContent(htmlContent);
-      replyContent.value = data.answer;
+      // Force a small delay to ensure Vue reactivity has updated
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
+      // DIRECT APPROACH: Format the content for TipTap
+      // Convert line breaks to HTML paragraphs
+      const content = data.data.answer;
+      const formattedContent = content.replace(/\n/g, '<br>');
+      
+      console.log('[AI Debug] Formatted content (first 50 chars):', formattedContent.substring(0, 50));
+      
+      // SIMPLIFIED APPROACH: First update the model, then set editor content
+      // 1. Clear the editor first
+      if (replyEditor.value) {
+        replyEditor.value.clearContent();
+      }
+      
+      // 2. Set the content with a delay to ensure editor is ready
+      setTimeout(() => {
+        try {
+          if (replyEditor.value?.editor) {
+            console.log('[AI Debug] Setting content via editor commands');
+            // Use HTML content with <br> tags for line breaks
+            replyEditor.value.editor.commands.setContent(formattedContent);
+            console.log('[AI Debug] Content set successfully');
+          } else {
+            console.log('[AI Debug] Editor not available in setTimeout');
+          }
+        } catch (err) {
+          console.log('[AI Debug] Error setting content:', err);
+        }
+      }, 50);
     } else {
       throw new Error(data.error || 'Failed to generate AI response');
     }
   } catch (error) {
+    console.log('[AI Debug] Error generating response:', error);
     // You could show a toast notification here for the error
   } finally {
     isGeneratingAI.value = false;
