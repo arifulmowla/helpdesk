@@ -27,7 +27,7 @@ class AIAnswerService
         try {
             // Get relevant context from knowledge base
             $context = $this->retrieveRelevantContext($query);
-            dd($context);
+
             // Build messages for the conversation
             $aiMessages = $this->buildMessages($query, $context, $conversationContext, $messages);
 
@@ -100,47 +100,40 @@ class AIAnswerService
             }
 
             // Query Pinecone for similar vectors
-            $matches = $this->pinecone->query(
+            $matches = collect($this->pinecone->query(
                 $queryEmbedding,
                 config('ai.rag.max_context_articles', 5),
                 ['is_published' => true] // Only include published articles
-            );
+            ));
 
             if (empty($matches)) {
                 Log::info('No matching articles found in Pinecone', ['query' => $query]);
                 return collect();
             }
-
-            // Filter by similarity threshold
-            $relevantMatches = array_filter($matches, function ($match) {
+            $matches = $matches->filter(function ($match) {
                 return ($match['score'] ?? 0) >= config('ai.rag.similarity_threshold', 0.4);
             });
 
-            // Get article IDs from the matches
-            $articleIds = array_map(function ($match) {
-                return $match['metadata']['article_id'] ?? null;
-            }, $relevantMatches);
-            $articleIds = array_filter($articleIds);
+            $articleIds = $matches->unique('metadata.article_id')->pluck('metadata.article_id');
 
-            if (empty($articleIds)) {
+            if ($articleIds->isEmpty()) {
                 return collect();
             }
 
-
             // Fetch the actual articles from database
             return KnowledgeBaseArticle::whereIn('id', $articleIds)
-                ->where('is_published', true)
-                ->get(['id', 'title', 'body', 'excerpt', 'slug'])
-                ->map(function ($article) {
-                    dd($article->body);
+                //->where('is_published', true)
+                ->get(['id', 'title', 'body', 'excerpt', 'slug', 'raw_body'])
+                ->map(function (KnowledgeBaseArticle $article) {
                     return [
                         'id' => $article->id,
                         'title' => $article->title,
-                        'content' => strip_tags($article->body),
+                        'content' => $article->raw_body,
                         'excerpt' => $article->excerpt,
                         'url' => route('knowledge-base.show', $article->slug)
                     ];
                 });
+
         } catch (Exception $e) {
             Log::error('Failed to retrieve relevant context', [
                 'query' => $query,

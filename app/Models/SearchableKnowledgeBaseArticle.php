@@ -7,7 +7,7 @@ if (class_exists('\Laravel\Scout\Searchable')) {
     class SearchableKnowledgeBaseArticle extends KnowledgeBaseArticle
     {
         use \Laravel\Scout\Searchable;
-        
+
         /**
          * Determine if the model should be searchable.
          */
@@ -15,7 +15,7 @@ if (class_exists('\Laravel\Scout\Searchable')) {
         {
             return $this->is_published;
         }
-        
+
         /**
          * Get the indexable data array for the model.
          */
@@ -25,14 +25,14 @@ if (class_exists('\Laravel\Scout\Searchable')) {
             if (!$this->is_published) {
                 return [];
             }
-            
+
             // Convert JSON body to searchable text
             if (is_array($this->body)) {
-                $bodyText = $this->extractTextFromTiptapContent($this->body);
+                $bodyText = $this->raw_body;
             } else {
                 $bodyText = $this->body ?? '';
             }
-            
+
             return [
                 'id' => $this->id,
                 'title' => $this->title,

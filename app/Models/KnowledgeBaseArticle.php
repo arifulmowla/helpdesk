@@ -10,6 +10,25 @@ class KnowledgeBaseArticle extends Model
 {
     use HasFactory, SoftDeletes;
 
+    /**
+     * Boot the model and add event listeners
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::saving(function ($article) {
+            // Automatically update raw_body when body changes
+            if ($article->isDirty('body')) {
+                if (is_array($article->body)) {
+                    $article->raw_body = $article->extractTextFromTiptapContent($article->body);
+                } else {
+                    $article->raw_body = strip_tags($article->body ?? '');
+                }
+            }
+        });
+    }
+
     // Conditionally use Scout Searchable trait if available
     public static function bootIfScoutAvailable()
     {
@@ -40,7 +59,7 @@ class KnowledgeBaseArticle extends Model
 
         // Convert JSON body to searchable text
         if (is_array($this->body)) {
-            $bodyText = $this->extractTextFromTiptapContent($this->body);
+            $bodyText = $this->raw_body;
         } else {
             $bodyText = $this->body;
         }
@@ -55,34 +74,18 @@ class KnowledgeBaseArticle extends Model
     }
 
     /**
-     * Extract plain text from TipTap JSON content
-     */
-    protected function extractTextFromTiptapContent(array $content): string
-    {
-        $text = '';
-
-        if (isset($content['content']) && is_array($content['content'])) {
-            foreach ($content['content'] as $node) {
-                if (isset($node['content']) && is_array($node['content'])) {
-                    foreach ($node['content'] as $textNode) {
-                        if (isset($textNode['text'])) {
-                            $text .= $textNode['text'] . ' ';
-                        }
-                    }
-                }
-            }
-        }
-
-        return trim($text);
-    }
-
-    /**
      * Get plain text content for embedding generation
      */
     public function getPlainTextContent(): string
     {
+        // Use cached raw_body if available for better performance
+        if (!empty($this->raw_body)) {
+            return $this->raw_body;
+        }
+
+        // Fallback to extracting from body (for existing records without raw_body)
         if (is_array($this->body)) {
-            return $this->extractTextFromTiptapContent($this->body);
+            return $this->raw_body;
         }
 
         return strip_tags($this->body ?? '');
@@ -101,7 +104,7 @@ class KnowledgeBaseArticle extends Model
 
         // Generate excerpt from body content
         if (is_array($this->body)) {
-            $text = $this->extractTextFromTiptapContent($this->body);
+            $text = $this->raw_body;
         } else {
             $text = strip_tags($this->body ?? '');
         }
@@ -119,6 +122,7 @@ class KnowledgeBaseArticle extends Model
         'slug',
         'excerpt',
         'body',
+        'raw_body',
         'is_published',
         'published_at',
         'view_count',
