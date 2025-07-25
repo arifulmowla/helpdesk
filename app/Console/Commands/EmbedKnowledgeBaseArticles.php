@@ -127,7 +127,7 @@ class EmbedKnowledgeBaseArticles extends Command
     /**
      * Embed a specific article
      */
-    protected function embedSpecificArticle(int $articleId): int
+    protected function embedSpecificArticle(string $articleId): int
     {
         $article = KnowledgeBaseArticle::find($articleId);
         

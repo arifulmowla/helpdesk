@@ -130,7 +130,7 @@ class KnowledgeBaseController extends Controller
             // Generate slug if not provided
             if (empty($data['slug'])) {
                 $baseSlug = Str::slug($data['title']);
-                $data['slug'] = $this->generateUniqueSlug($baseSlug);
+                $data['slug'] = $this->generateUniqueSlug($baseSlug, KnowledgeBaseArticle::class);
             }
             
             // Set publish timestamp if publishing
@@ -195,7 +195,7 @@ class KnowledgeBaseController extends Controller
             
             // Generate slug if changed
             if (isset($data['slug']) && $data['slug'] !== $article->slug) {
-                $data['slug'] = $this->generateUniqueSlug($data['slug'], $article->id);
+                $data['slug'] = $this->generateUniqueSlug($data['slug'], KnowledgeBaseArticle::class, $article->id);
             }
             
             // Handle publishing state changes
@@ -339,7 +339,7 @@ class KnowledgeBaseController extends Controller
                     } else {
                         // Create with unique slug
                         $baseSlug = Str::slug($tagData['name']);
-                        $uniqueSlug = $this->generateUniqueTagSlug($baseSlug);
+                        $uniqueSlug = $this->generateUniqueSlug($baseSlug, Tag::class);
                         $tag = Tag::create([
                             'name' => $tagData['name'],
                             'slug' => $uniqueSlug
@@ -357,39 +357,15 @@ class KnowledgeBaseController extends Controller
     }
 
     /**
-     * Generate a unique slug for tags.
+     * Generate a unique slug for any model.
      */
-    private function generateUniqueTagSlug(string $baseSlug, ?int $excludeId = null): string
+    private function generateUniqueSlug(string $baseSlug, string $modelClass, ?string $excludeId = null): string
     {
         $slug = $baseSlug;
         $counter = 1;
 
         while (true) {
-            $query = Tag::where('slug', $slug);
-            
-            if ($excludeId) {
-                $query->where('id', '!=', $excludeId);
-            }
-            
-            if (!$query->exists()) {
-                return $slug;
-            }
-            
-            $slug = $baseSlug . '-' . $counter;
-            $counter++;
-        }
-    }
-
-    /**
-     * Generate a unique slug for the article.
-     */
-    private function generateUniqueSlug(string $baseSlug, ?int $excludeId = null): string
-    {
-        $slug = $baseSlug;
-        $counter = 1;
-
-        while (true) {
-            $query = KnowledgeBaseArticle::where('slug', $slug);
+            $query = $modelClass::where('slug', $slug);
             
             if ($excludeId) {
                 $query->where('id', '!=', $excludeId);

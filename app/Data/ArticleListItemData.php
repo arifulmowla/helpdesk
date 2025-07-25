@@ -22,8 +22,8 @@ class ArticleListItemData extends Data
         public int $view_count,
         /** @var string[] */
         public array $tag_names,
-        public ?array $created_by,
-        public ?array $updated_by,
+        public ?UserData $created_by,
+        public ?UserData $updated_by,
         public ?string $highlighted_title = null,
         public ?string $highlighted_excerpt = null,
     ) {
@@ -43,16 +43,8 @@ class ArticleListItemData extends Data
             deleted_at: $article->deleted_at?->format('Y-m-d H:i:s'),
             view_count: $article->getAttribute('view_count') ?? 0,
             tag_names: $article->tags->pluck('name')->toArray(),
-            created_by: $article->createdBy ? [
-                'id' => $article->createdBy->id,
-                'name' => $article->createdBy->name,
-                'email' => $article->createdBy->email,
-            ] : null,
-            updated_by: $article->updatedBy ? [
-                'id' => $article->updatedBy->id,
-                'name' => $article->updatedBy->name,
-                'email' => $article->updatedBy->email,
-            ] : null,
+            created_by: UserData::fromModel($article->createdBy),
+            updated_by: UserData::fromModel($article->updatedBy),
             highlighted_title: $article->highlighted_title ?? null,
             highlighted_excerpt: $article->highlighted_excerpt ?? null,
         );

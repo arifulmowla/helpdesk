@@ -164,7 +164,7 @@ class KnowledgeBaseEmbeddingService
     /**
      * Generate a unique vector ID for an article chunk
      */
-    protected function generateVectorId(int $articleId, int $chunkIndex): string
+    protected function generateVectorId(string $articleId, int $chunkIndex): string
     {
         return "article_{$articleId}_chunk_{$chunkIndex}";
     }

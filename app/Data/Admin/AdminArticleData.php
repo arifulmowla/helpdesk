@@ -3,6 +3,7 @@
 namespace App\Data\Admin;
 
 use App\Data\TagData;
+use App\Data\UserData;
 use App\Models\KnowledgeBaseArticle;
 use Spatie\LaravelData\Data;
 use Spatie\TypeScriptTransformer\Attributes\TypeScript;
@@ -26,8 +27,8 @@ class AdminArticleData extends Data
         /** @var string[] */
         public array $tag_names,
         public array $body,
-        public ?array $created_by,
-        public ?array $updated_by,
+        public ?UserData $created_by,
+        public ?UserData $updated_by,
         /** @var TagData[] */
         public array $tags,
     ) {
@@ -51,16 +52,8 @@ class AdminArticleData extends Data
             tag_ids: $article->tags->pluck('id')->toArray(),
             tag_names: $article->tags->pluck('name')->toArray(),
             body: $article->getAttribute('body') ?? [],
-            created_by: $article->createdBy ? [
-                'id' => $article->createdBy->id,
-                'name' => $article->createdBy->name,
-                'email' => $article->createdBy->email,
-            ] : null,
-            updated_by: $article->updatedBy ? [
-                'id' => $article->updatedBy->id,
-                'name' => $article->updatedBy->name,
-                'email' => $article->updatedBy->email,
-            ] : null,
+            created_by: UserData::fromModel($article->createdBy),
+            updated_by: UserData::fromModel($article->updatedBy),
             tags: $article->tags->map(fn($tag) => TagData::fromModel($tag))->all(),
         );
     }

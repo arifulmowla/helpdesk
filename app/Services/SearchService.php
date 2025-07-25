@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\KnowledgeBaseArticle;
-use App\Models\SearchableKnowledgeBaseArticle;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -51,8 +50,8 @@ class SearchService
      */
     public function isScoutAvailable(): bool
     {
-        return class_exists(\Laravel\Scout\Searchable::class) 
-            && method_exists(SearchableKnowledgeBaseArticle::class, 'search');
+        return class_exists('\Laravel\Scout\Searchable') 
+            && method_exists(KnowledgeBaseArticle::class, 'search');
     }
 
     /**
@@ -60,7 +59,7 @@ class SearchService
      */
     protected function searchWithScout(string $query, ?string $tagSlug = null, int $perPage = 10): LengthAwarePaginator
     {
-        $searchQuery = SearchableKnowledgeBaseArticle::search($query)
+        $searchQuery = KnowledgeBaseArticle::search($query)
             ->where('is_published', true);
 
         if ($tagSlug) {
@@ -95,34 +94,21 @@ class SearchService
     }
 
     /**
-     * Search using SQLite FTS5
+     * Search using SQLite with raw_body field
      */
     protected function searchSqliteWithFts(string $query, ?string $tagSlug = null, int $perPage = 10): LengthAwarePaginator
     {
-        $searchQuery = KnowledgeBaseArticle::query()
-            ->select('knowledge_base_articles.*')
-            ->join('knowledge_base_articles_fts', 'knowledge_base_articles.id', '=', 'knowledge_base_articles_fts.rowid')
-            ->whereRaw('knowledge_base_articles_fts MATCH ?', [$this->prepareFtsQuery($query)])
-            ->where('is_published', true)
-            ->with('tags');
-
-        if ($tagSlug) {
-            $searchQuery->whereHas('tags', function ($q) use ($tagSlug) {
-                $q->where('tags.slug', $tagSlug);
-            });
-        }
-
-        return $searchQuery->orderByRaw('bm25(knowledge_base_articles_fts)')
-            ->paginate($perPage);
+        // Use LIKE search on raw_body since we removed the FTS table
+        return $this->searchWithLike($query, $tagSlug, $perPage);
     }
 
     /**
-     * Search using MySQL FULLTEXT
+     * Search using MySQL FULLTEXT on raw_body
      */
     protected function searchMysqlWithFulltext(string $query, ?string $tagSlug = null, int $perPage = 10): LengthAwarePaginator
     {
         $searchQuery = KnowledgeBaseArticle::query()
-            ->whereRaw('MATCH(title, excerpt) AGAINST(? IN BOOLEAN MODE)', [$this->prepareMysqlQuery($query)])
+            ->whereRaw('MATCH(title, raw_body) AGAINST(? IN BOOLEAN MODE)', [$this->prepareMysqlQuery($query)])
             ->where('is_published', true)
             ->with('tags');
 
@@ -132,12 +118,12 @@ class SearchService
             });
         }
 
-        return $searchQuery->orderByRaw('MATCH(title, excerpt) AGAINST(?) DESC', [$query])
+        return $searchQuery->orderByRaw('MATCH(title, raw_body) AGAINST(?) DESC', [$query])
             ->paginate($perPage);
     }
 
     /**
-     * Fallback search using LIKE queries
+     * Fallback search using LIKE queries on raw_body
      */
     protected function searchWithLike(string $query, ?string $tagSlug = null, int $perPage = 10): LengthAwarePaginator
     {
@@ -145,7 +131,8 @@ class SearchService
             ->where('is_published', true)
             ->where(function ($q) use ($query) {
                 $q->where('title', 'like', "%{$query}%")
-                  ->orWhere('excerpt', 'like', "%{$query}%");
+                  ->orWhere('excerpt', 'like', "%{$query}%")
+                  ->orWhere('raw_body', 'like', "%{$query}%");
             })
             ->with('tags');
 
@@ -159,22 +146,7 @@ class SearchService
             ->paginate($perPage);
     }
 
-    /**
-     * Prepare query for FTS5 (SQLite)
-     */
-    protected function prepareFtsQuery(string $query): string
-    {
-        // Escape and format for FTS5
-        $query = str_replace('"', '""', $query);
-        $terms = explode(' ', $query);
-        
-        // Use phrase search for multi-word queries
-        if (count($terms) > 1) {
-            return '"' . implode(' ', $terms) . '"';
-        }
-        
-        return $query . '*';
-    }
+
 
     /**
      * Prepare query for MySQL FULLTEXT

@@ -24,9 +24,8 @@ class ArticleDetailData extends Data
         /** @var string[] */
         public array $tag_names,
         public array $body,
-        public ?array $author,
-        public ?array $created_by,
-        public ?array $updated_by,
+        public ?UserData $created_by,
+        public ?UserData $updated_by,
         public Lazy|array $tags,
         public ?array $previous_article,
         public ?array $next_article,
@@ -59,21 +58,8 @@ class ArticleDetailData extends Data
             view_count: $article->getAttribute('view_count') ?? 0,
             tag_names: $article->tags->pluck('name')->toArray(),
             body: $article->getAttribute('body') ?? [],
-            author: $article->createdBy ? [
-                'id' => $article->createdBy->id,
-                'name' => $article->createdBy->name,
-                'email' => $article->createdBy->email,
-            ] : null,
-            created_by: $article->createdBy ? [
-                'id' => $article->createdBy->id,
-                'name' => $article->createdBy->name,
-                'email' => $article->createdBy->email,
-            ] : null,
-            updated_by: $article->updatedBy ? [
-                'id' => $article->updatedBy->id,
-                'name' => $article->updatedBy->name,
-                'email' => $article->updatedBy->email,
-            ] : null,
+            created_by: UserData::fromModel($article->createdBy),
+            updated_by: UserData::fromModel($article->updatedBy),
             tags: Lazy::whenLoaded('tags', $article, fn () => TagData::collect($article->tags)),
             previous_article: $previousArticle ? [
                 'id' => $previousArticle->getKey(),
