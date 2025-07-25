@@ -33,10 +33,8 @@ return new class extends Migration
             $table->boolean('is_published')->default(false);
             $table->timestamp('published_at')->nullable();
             $table->unsignedBigInteger('view_count')->default(0);
-            $table->string('created_by', 26);
-            $table->string('updated_by', 26);
-            $table->foreign('created_by')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('updated_by')->references('id')->on('users')->onDelete('cascade');
+            $table->string('created_by', 26); // ULID reference to users.id
+            $table->string('updated_by', 26); // ULID reference to users.id
             $table->timestamps();
             $table->softDeletes();
             
