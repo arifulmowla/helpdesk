@@ -209,7 +209,6 @@ const generateAnswer = async () => {
       await generateStaticAnswer()
     }
   } catch (err) {
-    console.error('AI answer generation failed:', err)
     error.value = 'Failed to generate answer. Please try again.'
   } finally {
     isGenerating.value = false
@@ -280,7 +279,7 @@ const generateStreamingAnswer = async () => {
               throw new Error(data.error || 'Unknown streaming error')
             }
           } catch (parseError) {
-            console.warn('Failed to parse streaming data:', parseError)
+            error.value = 'Failed to parse response data. Please try again.'
           }
         }
       }

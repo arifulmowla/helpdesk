@@ -2,29 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Data\AIAnswerData;
 use App\Services\AIAnswerService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class AIAnswerController extends Controller
 {
-    protected AIAnswerService $aiAnswerService;
+    public function __construct(
+        private AIAnswerService $aiAnswerService
+    ) {}
 
-    public function __construct(AIAnswerService $aiAnswerService)
-    {
-        $this->aiAnswerService = $aiAnswerService;
-    }
-
-    /**
-     * Generate an AI answer (non-streaming)
-     */
     public function generate(Request $request): JsonResponse
     {
         try {
-            $request->validate([
+            $validated = $request->validate([
                 'query' => 'required|string|min:3|max:1000',
                 'conversation_id' => 'nullable|exists:conversations,id',
                 'conversation_context' => 'nullable|array',
@@ -33,22 +27,24 @@ class AIAnswerController extends Controller
                 'messages' => 'nullable|array',
             ]);
 
-            $query = $request->input('query');
-            $conversationId = $request->input('conversation_id');
-            $conversationContext = $request->input('conversation_context');
-            $messages = $request->input('messages', []);
+            $answer = $this->aiAnswerService->generateAnswer(
+                $validated['query'],
+                $request->input('conversation_context'),
+                $request->input('messages', [])
+            );
+            
+            $sources = $this->aiAnswerService->getArticleSources($validated['query']);
 
-            Log::info('AI answer generation requested', ['query' => substr($query, 0, 100) . '...']);
-
-            $answer = $this->aiAnswerService->generateAnswer($query, $conversationContext, $messages);
-            $sources = $this->aiAnswerService->getArticleSources($query);
+            $responseData = AIAnswerData::from([
+                'answer' => $answer,
+                'sources' => $sources,
+                'query' => $validated['query'],
+                'timestamp' => now()->toISOString(),
+            ]);
 
             return response()->json([
                 'success' => true,
-                'answer' => $answer,
-                'sources' => $sources->toArray(),
-                'query' => $query,
-                'timestamp' => now()->toISOString(),
+                'data' => $responseData,
             ]);
 
         } catch (ValidationException $e) {
@@ -58,11 +54,7 @@ class AIAnswerController extends Controller
                 'details' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('AI answer generation failed', [
-                'query' => $request->input('query'),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            Log::error('AI answer generation failed: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -71,23 +63,19 @@ class AIAnswerController extends Controller
         }
     }
 
-    /**
-     * Get sources for a query without generating an answer
-     */
     public function sources(Request $request): JsonResponse
     {
         try {
-            $request->validate([
+            $validated = $request->validate([
                 'query' => 'required|string|min:3|max:1000',
             ]);
 
-            $query = $request->input('query');
-            $sources = $this->aiAnswerService->getArticleSources($query);
+            $sources = $this->aiAnswerService->getArticleSources($validated['query']);
 
             return response()->json([
                 'success' => true,
-                'sources' => $sources->toArray(),
-                'query' => $query,
+                'sources' => $sources,
+                'query' => $validated['query'],
             ]);
 
         } catch (ValidationException $e) {
@@ -97,10 +85,7 @@ class AIAnswerController extends Controller
                 'details' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('AI sources retrieval failed', [
-                'query' => $request->input('query'),
-                'error' => $e->getMessage()
-            ]);
+            Log::error('AI sources retrieval failed: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,

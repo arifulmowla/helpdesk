@@ -14,37 +14,19 @@ class PineconeService
     public function __construct()
     {
         $indexHost = config('ai.pinecone.index_host');
+        $apiKey = config('ai.pinecone.api_key');
         
-        if ($indexHost) {
-            // Initialize with both API key and index host
-            $this->client = new PineconeClient(
-                apiKey: config('ai.pinecone.api_key'),
-                indexHost: $indexHost
-            );
-        } else {
-            // Initialize with just API key, set index host later if needed
-            $this->client = new PineconeClient(
-                apiKey: config('ai.pinecone.api_key')
-            );
-        }
+        $this->client = new PineconeClient(
+            apiKey: $apiKey,
+            indexHost: $indexHost ?: null
+        );
         
         $this->indexName = config('ai.pinecone.index_name');
     }
 
-    /**
-     * Store a vector in Pinecone
-     */
     public function upsert(string $id, array $vector, array $metadata = []): bool
     {
         try {
-            Log::info('PineconeService upsert called', [
-                'id' => $id,
-                'vector_dimension' => count($vector),
-                'vector_type' => gettype($vector),
-                'vector_preview' => array_slice($vector, 0, 5),
-                'metadata_keys' => array_keys($metadata)
-            ]);
-            
             $response = $this->client->data()->vectors()->upsert(
                 vectors: [
                     [
@@ -55,43 +37,24 @@ class PineconeService
                 ]
             );
 
-            if ($response->successful()) {
-                Log::info('Pinecone upsert successful', ['id' => $id]);
-                return true;
-            } else {
-                Log::error('Pinecone upsert failed with response', [
+            if (!$response->successful()) {
+                Log::error('Pinecone upsert failed', [
                     'id' => $id,
-                    'status' => $response->status(),
-                    'response' => $response->body()
+                    'status' => $response->status()
                 ]);
                 return false;
             }
+            
+            return true;
         } catch (Exception $e) {
-            Log::error('Pinecone upsert failed with exception', [
-                'id' => $id,
-                'error' => $e->getMessage(),
-                'vector_dimension' => count($vector)
-            ]);
+            Log::error('Pinecone upsert failed: ' . $e->getMessage());
             return false;
         }
     }
 
-    /**
-     * Query vectors by similarity
-     */
     public function query(array $vector, int $topK = 5, array $filter = []): array
     {
         try {
-            $queryParams = [
-                'vector' => $vector,
-                'topK' => $topK,
-                'includeMetadata' => true,
-            ];
-
-            if (!empty($filter)) {
-                $queryData['filter'] = $filter;
-            }
-
             $response = $this->client->data()->vectors()->query(
                 vector: $vector,
                 topK: $topK,
@@ -106,36 +69,25 @@ class PineconeService
 
             return [];
         } catch (Exception $e) {
-            Log::error('Pinecone query failed', [
-                'error' => $e->getMessage()
-            ]);
+            Log::error('Pinecone query failed: ' . $e->getMessage());
             return [];
         }
     }
 
-    /**
-     * Delete a vector from Pinecone
-     */
     public function delete(string $id): bool
     {
         try {
-            $response = $this->client->index($this->indexName)->vectors()->delete([
-                'ids' => [$id]
-            ]);
+            $response = $this->client->data()->vectors()->delete(
+                ids: [$id]
+            );
 
             return $response->successful();
         } catch (Exception $e) {
-            Log::error('Pinecone delete failed', [
-                'id' => $id,
-                'error' => $e->getMessage()
-            ]);
+            Log::error('Pinecone delete failed: ' . $e->getMessage());
             return false;
         }
     }
 
-    /**
-     * Delete vectors by metadata filter
-     */
     public function deleteByFilter(array $filter): bool
     {
         try {
@@ -145,17 +97,11 @@ class PineconeService
 
             return $response->successful();
         } catch (Exception $e) {
-            Log::error('Pinecone delete by filter failed', [
-                'filter' => $filter,
-                'error' => $e->getMessage()
-            ]);
+            Log::error('Pinecone delete by filter failed: ' . $e->getMessage());
             return false;
         }
     }
 
-    /**
-     * Get index stats
-     */
     public function getStats(): array
     {
         try {
@@ -167,25 +113,18 @@ class PineconeService
 
             return [];
         } catch (Exception $e) {
-            Log::error('Pinecone stats failed', [
-                'error' => $e->getMessage()
-            ]);
+            Log::error('Pinecone stats failed: ' . $e->getMessage());
             return [];
         }
     }
 
-    /**
-     * Check if index exists and is ready
-     */
     public function isReady(): bool
     {
         try {
             $response = $this->client->data()->vectors()->stats();
             return $response->successful();
         } catch (Exception $e) {
-            Log::error('Pinecone readiness check failed', [
-                'error' => $e->getMessage()
-            ]);
+            Log::error('Pinecone readiness check failed: ' . $e->getMessage());
             return false;
         }
     }

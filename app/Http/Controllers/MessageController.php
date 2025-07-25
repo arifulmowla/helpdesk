@@ -7,7 +7,6 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Services\Email\EmailService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -16,9 +15,6 @@ class MessageController extends Controller
     public function __construct(
         private EmailService $emailService
     ) {}
-    /**
-     * Store a new message for a conversation.
-     */
     public function store(Request $request, Conversation $conversation)
     {
         $validated = $request->validate([
@@ -50,9 +46,6 @@ class MessageController extends Controller
         });
     }
     
-    /**
-     * Handle email notification for agent messages.
-     */
     private function handleEmailNotification(Message $message, Conversation $conversation, string $type): ?bool
     {
         if ($type !== 'agent') {
@@ -68,10 +61,7 @@ class MessageController extends Controller
             $this->emailService->sendReply($message);
             return true;
         } catch (\Exception $e) {
-            Log::warning('Failed to send email notification for message', [
-                'message_id' => $message->id,
-                'error' => $e->getMessage()
-            ]);
+            Log::warning('Failed to send email notification: ' . $e->getMessage());
             return false;
         }
     }

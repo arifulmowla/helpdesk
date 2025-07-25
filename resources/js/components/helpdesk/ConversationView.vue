@@ -401,8 +401,8 @@ function markAsUnread() {
       });
       closeMoreMenu();
     },
-    onError: (errors) => {
-      console.error('Error marking conversation as unread:', errors);
+    onError: () => {
+      // Handle error silently or add a toast notification here if needed
     }
   });
 }
@@ -417,8 +417,7 @@ function assignToUser() {
       // Reset the select to show updated state
       selectedUser.value = selectedUser.value;
     },
-    onError: (errors) => {
-      console.error('Error assigning conversation:', errors);
+    onError: () => {
       // Reset the select on error
       selectedUser.value = props.conversation.assigned_to?.id || '';
     }
@@ -431,7 +430,6 @@ async function generateAIResponse() {
   // Get the latest customer message
   const customerMessages = props.messages.filter(m => m.type === 'customer');
   if (customerMessages.length === 0) {
-    console.warn('No customer messages found');
     return;
   }
   
@@ -442,7 +440,6 @@ async function generateAIResponse() {
   const query = tempDiv.textContent || tempDiv.innerText || '';
   
   if (!query.trim()) {
-    console.warn('Latest customer message is empty');
     return;
   }
   
@@ -481,27 +478,20 @@ async function generateAIResponse() {
     const data = await response.json();
     
     if (data.success && data.answer) {
-      console.log('AI Response received:', data.answer);
-      console.log('Reply editor ref:', replyEditor.value);
-      
       // Clear the reply editor and set the AI response
       replyEditor.value?.clearContent();
       
       // Convert plain text with line breaks to HTML for TipTap
       const htmlContent = data.answer.replace(/\n/g, '<br>');
-      console.log('HTML content for TipTap:', htmlContent);
       
       // Use the correct TipTap API to set content
       replyEditor.value?.editor?.commands.setContent(htmlContent);
       replyContent.value = data.answer;
-      
-      console.log('Content set in editor. Current replyContent:', replyContent.value);
     } else {
       throw new Error(data.error || 'Failed to generate AI response');
     }
   } catch (error) {
-    console.error('AI generation failed:', error);
-    // You could show a toast notification here
+    // You could show a toast notification here for the error
   } finally {
     isGeneratingAI.value = false;
   }
