@@ -22,18 +22,13 @@ class KnowledgeBaseArticle extends Model
      */
     public function toSearchableArray(): array
     {
-        // Only include published articles in search index
-        if (!$this->is_published) {
-            return [];
-        }
-
-        return [
+        return $this->is_published ? [
             'id' => $this->id,
             'title' => $this->title,
             'excerpt' => $this->excerpt,
-            'body' => $this->raw_body ?? strip_tags($this->body ?? ''),
+            'body' => $this->getPlainTextContent(),
             'is_published' => $this->is_published,
-        ];
+        ] : [];
     }
 
     /**
@@ -46,24 +41,15 @@ class KnowledgeBaseArticle extends Model
 
     /**
      * Get the excerpt for the article.
-     * If no excerpt is set, generate one from the raw_body content.
      */
     public function getExcerptAttribute($value): string
     {
-        // If excerpt is manually set, return it
         if (!empty($value)) {
             return $value;
         }
 
-        // Generate excerpt from raw_body content
-        $text = $this->raw_body ?? '';
-
-        // Truncate to 200 characters and add ellipsis
-        if (strlen($text) > 200) {
-            return substr($text, 0, 200) . '...';
-        }
-
-        return $text;
+        $text = $this->getPlainTextContent();
+        return strlen($text) > 200 ? substr($text, 0, 200) . '...' : $text;
     }
 
     protected $fillable = [

@@ -122,33 +122,11 @@ class KnowledgeBaseController extends Controller
     {
         return DB::transaction(function () use ($request) {
             $data = $request->validated();
+            $data['created_by'] = (string) auth()->id();
+            $data['updated_by'] = (string) auth()->id();
             
-            // Extract tags from data before creating article
-            $tags = $data['tags'] ?? [];
-            unset($data['tags']);
-            
-            // Generate slug if not provided
-            if (empty($data['slug'])) {
-                $baseSlug = Str::slug($data['title']);
-                $data['slug'] = $this->generateUniqueSlug($baseSlug, KnowledgeBaseArticle::class);
-            }
-            
-            // Set publish timestamp if publishing
-            if ($data['is_published'] && empty($data['published_at'])) {
-                $data['published_at'] = now();
-            }
-            
-            // Set author
-            $data['created_by'] = auth()->id();
-            $data['updated_by'] = auth()->id();
-
-            $article = KnowledgeBaseArticle::create($data);
-
-            // Handle tags (including new ones)
-            if (!empty($tags)) {
-                $tagIds = $this->processTagsAndGetIds($tags);
-                $article->tags()->sync($tagIds);
-            }
+            $article = KnowledgeBaseArticle::create($this->prepareArticleData($data));
+            $this->syncArticleTags($article, $data['tags'] ?? []);
 
             return redirect()
                 ->route('admin.knowledge-base.index')
@@ -188,36 +166,10 @@ class KnowledgeBaseController extends Controller
     {
         return DB::transaction(function () use ($request, $article) {
             $data = $request->validated();
+            $data['updated_by'] = (string) auth()->id();
             
-            // Extract tags from data before updating article
-            $tags = $data['tags'] ?? [];
-            unset($data['tags']);
-            
-            // Generate slug if changed
-            if (isset($data['slug']) && $data['slug'] !== $article->slug) {
-                $data['slug'] = $this->generateUniqueSlug($data['slug'], KnowledgeBaseArticle::class, $article->id);
-            }
-            
-            // Handle publishing state changes
-            if ($data['is_published'] && !$article->is_published && empty($data['published_at'])) {
-                $data['published_at'] = now();
-            } elseif (!$data['is_published']) {
-                $data['published_at'] = null;
-            }
-            
-            // Set updater
-            $data['updated_by'] = auth()->id();
-
-            $article->update($data);
-
-            // Handle tags (including new ones)
-            if (!empty($tags)) {
-                $tagIds = $this->processTagsAndGetIds($tags);
-                $article->tags()->sync($tagIds);
-            } else {
-                // If no tags provided, remove all tags
-                $article->tags()->sync([]);
-            }
+            $article->update($this->prepareArticleData($data, $article));
+            $this->syncArticleTags($article, $data['tags'] ?? []);
 
             return redirect()
                 ->route('admin.knowledge-base.index')
@@ -264,96 +216,96 @@ class KnowledgeBaseController extends Controller
     }
 
     /**
-     * Handle image uploads for TipTap editor.
+     * Handle file uploads for TipTap editor (images and files).
      */
-    public function uploadImage(Request $request)
+    public function upload(Request $request)
     {
-        $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-        ]);
-
-        try {
-            $url = $this->fileUploadService->uploadImage(
-                $request->file('image'),
-                'knowledge-base/images'
-            );
-
-            return response()->json([
-                'success' => true,
-                'url' => $url,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to upload image: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    /**
-     * Handle file uploads for TipTap editor.
-     */
-    public function uploadFile(Request $request)
-    {
-        $request->validate([
-            'file' => 'required|file|mimes:pdf,doc,docx,txt,zip|max:10240', // 10MB max
-        ]);
-
-        try {
-            $url = $this->fileUploadService->uploadFile(
-                $request->file('file'),
-                'knowledge-base/files'
-            );
-
-            return response()->json([
-                'success' => true,
-                'url' => $url,
-                'name' => $request->file('file')->getClientOriginalName(),
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to upload file: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    /**
-     * Process tags array and return IDs, creating new tags as needed.
-     */
-    private function processTagsAndGetIds(array $tags): array
-    {
-        $tagIds = [];
+        $isImage = $request->hasFile('image');
+        $fileKey = $isImage ? 'image' : 'file';
         
-        foreach ($tags as $tagData) {
-            if (is_array($tagData)) {
-                // If it's an array with id and name
-                if (isset($tagData['id']) && !str_starts_with($tagData['id'], 'new-')) {
-                    // Existing tag
-                    $tagIds[] = $tagData['id'];
-                } elseif (isset($tagData['name'])) {
-                    // New tag - create it
-                    $existingTag = Tag::where('name', $tagData['name'])->first();
-                    if ($existingTag) {
-                        $tagIds[] = $existingTag->id;
-                    } else {
-                        // Create with unique slug
-                        $baseSlug = Str::slug($tagData['name']);
-                        $uniqueSlug = $this->generateUniqueSlug($baseSlug, Tag::class);
-                        $tag = Tag::create([
-                            'name' => $tagData['name'],
-                            'slug' => $uniqueSlug
-                        ]);
-                        $tagIds[] = $tag->id;
-                    }
-                }
-            } else {
-                // If it's just an ID
-                $tagIds[] = $tagData;
+        $rules = $isImage 
+            ? ['image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048']
+            : ['file' => 'required|file|mimes:pdf,doc,docx,txt,zip|max:10240'];
+            
+        $request->validate($rules);
+
+        try {
+            $directory = $isImage ? 'knowledge-base/images' : 'knowledge-base/files';
+            $method = $isImage ? 'uploadImage' : 'uploadFile';
+            
+            $url = $this->fileUploadService->$method(
+                $request->file($fileKey),
+                $directory
+            );
+
+            $response = ['success' => true, 'url' => $url];
+            
+            if (!$isImage) {
+                $response['name'] = $request->file($fileKey)->getClientOriginalName();
             }
+            
+            return response()->json($response);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Prepare article data for create/update operations.
+     */
+    private function prepareArticleData(array $data, ?KnowledgeBaseArticle $article = null): array
+    {
+        // Remove tags from article data
+        unset($data['tags']);
+        
+        // Handle slug generation
+        if (empty($data['slug'])) {
+            $data['slug'] = $this->generateUniqueSlug(Str::slug($data['title']), KnowledgeBaseArticle::class, $article?->id);
+        } elseif ($article && $data['slug'] !== $article->slug) {
+            $data['slug'] = $this->generateUniqueSlug($data['slug'], KnowledgeBaseArticle::class, $article->id);
         }
         
-        return $tagIds;
+        // Handle publication timestamps
+        if ($data['is_published']) {
+            if (!$article || (!$article->is_published && empty($data['published_at']))) {
+                $data['published_at'] = now();
+            }
+        } else {
+            $data['published_at'] = null;
+        }
+        
+        return $data;
+    }
+    
+    /**
+     * Sync article tags, creating new ones as needed.
+     */
+    private function syncArticleTags(KnowledgeBaseArticle $article, array $tags): void
+    {
+        if (empty($tags)) {
+            $article->tags()->sync([]);
+            return;
+        }
+        
+        $tagIds = collect($tags)->map(function ($tagData) {
+            if (is_array($tagData)) {
+                if (isset($tagData['id']) && !str_starts_with($tagData['id'], 'new-')) {
+                    return $tagData['id'];
+                }
+                if (isset($tagData['name'])) {
+                    return Tag::firstOrCreate(
+                        ['name' => $tagData['name']],
+                        ['slug' => $this->generateUniqueSlug(Str::slug($tagData['name']), Tag::class)]
+                    )->id;
+                }
+            }
+            return $tagData;
+        })->filter()->toArray();
+        
+        $article->tags()->sync($tagIds);
     }
 
     /**
@@ -364,19 +316,10 @@ class KnowledgeBaseController extends Controller
         $slug = $baseSlug;
         $counter = 1;
 
-        while (true) {
-            $query = $modelClass::where('slug', $slug);
-            
-            if ($excludeId) {
-                $query->where('id', '!=', $excludeId);
-            }
-            
-            if (!$query->exists()) {
-                return $slug;
-            }
-            
-            $slug = $baseSlug . '-' . $counter;
-            $counter++;
+        while ($modelClass::where('slug', $slug)->when($excludeId, fn($q) => $q->where('id', '!=', $excludeId))->exists()) {
+            $slug = $baseSlug . '-' . $counter++;
         }
+        
+        return $slug;
     }
 }

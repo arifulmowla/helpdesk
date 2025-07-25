@@ -86,25 +86,16 @@ class Conversation extends Model
     }
 
     /**
-     * Mark conversation as read
+     * Mark conversation as read/unread
      */
     public function markAsRead(): bool
     {
-        return $this->update([
-            'unread' => false,
-            'read_at' => now()
-        ]);
+        return $this->update(['unread' => false, 'read_at' => now()]);
     }
 
-    /**
-     * Mark conversation as unread
-     */
     public function markAsUnread(): bool
     {
-        return $this->update([
-            'unread' => true,
-            'read_at' => null
-        ]);
+        return $this->update(['unread' => true, 'read_at' => null]);
     }
 
     /**
@@ -116,16 +107,13 @@ class Conversation extends Model
     }
 
     /**
-     * Scope to get only unread conversations
+     * Scope to filter by read status
      */
     public function scopeUnread($query)
     {
         return $query->where('unread', true);
     }
 
-    /**
-     * Scope to get only read conversations
-     */
     public function scopeRead($query)
     {
         return $query->where('unread', false);
@@ -169,10 +157,8 @@ class Conversation extends Model
     public static function generateCaseNumber(): string
     {
         do {
-            // Generate 8-character case number: 2 letters + 6 digits
-            $letters = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 2));
-            $numbers = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
-            $caseNumber = $letters . $numbers;
+            $caseNumber = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 2)) 
+                        . str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
         } while (static::where('case_number', $caseNumber)->exists());
 
         return $caseNumber;

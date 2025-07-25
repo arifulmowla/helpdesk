@@ -16,64 +16,27 @@ class ConversationController extends Controller
 {
     /**
      * Display the helpdesk with conversations and messages.
-     * If no conversation ID is provided, it shows the first conversation or an empty state.
      */
     public function index(Request $request, Conversation $conversation = null)
     {
-        // Get filter parameters
         $filters = $request->only(['status', 'priority', 'unread', 'search', 'contact_id']);
-        $currentPage = $request->input('page', 1);
-        $perPage = 10;
-
-        // Get conversations with proper pagination handling
-        $allConversations = $this->getPaginatedConversations($filters, $currentPage, $perPage);
-
-        // If no specific conversation was requested, try to get the first one
-        if ($conversation === null || !$conversation->exists) {
-            $conversation = Conversation::orderBy('last_activity_at', 'desc')->first();
-        }
-
-        // Prepare the conversation data and messages if a conversation exists
-        $conversationData = null;
-        $messages = [];
-
-        if ($conversation) {
-            $conversation->markAsRead();
-            $conversation->refresh();
-            $conversation->load(['contact.company', 'assignedTo', 'messages.conversation.contact.company']);
-            $conversationData = ConversationData::from($conversation);
-            $messages = MessageData::collect($conversation->messages);
-        }
-
-        // Handle infinite scroll - if this is a partial request for conversations only
-        if ($request->header('X-Inertia-Partial-Data') && in_array('conversations', explode(',', $request->header('X-Inertia-Partial-Data')))) {
-            // For infinite scroll, we need to maintain the existing data structure
-            // but only return the current page's data
-            return Inertia::render('helpdesk/Show', [
-                'conversations' => [
-                    'data' => ConversationData::collect($allConversations->items()),
-                    'current_page' => $allConversations->currentPage(),
-                    'last_page' => $allConversations->lastPage(),
-                    'per_page' => $allConversations->perPage(),
-                    'total' => $allConversations->total(),
-                    'from' => $allConversations->firstItem(),
-                    'to' => $allConversations->lastItem(),
-                ],
-            ]);
+        $conversations = $this->getPaginatedConversations($filters, $request->input('page', 1), 10);
+        
+        // Get conversation data if one is selected
+        $conversation = $conversation ?: Conversation::orderBy('last_activity_at', 'desc')->first();
+        [$conversationData, $messages] = $this->prepareConversationData($conversation);
+        
+        $conversationsData = $this->formatConversationsData($conversations);
+        
+        // Handle partial requests for infinite scroll
+        if ($this->isPartialConversationsRequest($request)) {
+            return Inertia::render('helpdesk/Show', ['conversations' => $conversationsData]);
         }
 
         return Inertia::render('helpdesk/Show', [
             'conversation' => $conversationData,
             'messages' => $messages,
-            'conversations' => [
-                'data' => ConversationData::collect($allConversations->items()),
-                'current_page' => $allConversations->currentPage(),
-                'last_page' => $allConversations->lastPage(),
-                'per_page' => $allConversations->perPage(),
-                'total' => $allConversations->total(),
-                'from' => $allConversations->firstItem(),
-                'to' => $allConversations->lastItem(),
-            ],
+            'conversations' => $conversationsData,
             'filters' => [
                 'current' => $filters,
                 'options' => ConversationFilterData::create(),
@@ -91,6 +54,49 @@ class ConversationController extends Controller
             ->filter($filters)
             ->orderBy('last_activity_at', 'desc')
             ->paginate($perPage, ['*'], 'page', $currentPage);
+    }
+    
+    /**
+     * Prepare conversation data and messages.
+     */
+    private function prepareConversationData(?Conversation $conversation): array
+    {
+        if (!$conversation) {
+            return [null, []];
+        }
+        
+        $conversation->markAsRead();
+        $conversation->load(['contact.company', 'assignedTo', 'messages.conversation.contact.company']);
+        
+        return [
+            ConversationData::from($conversation),
+            MessageData::collect($conversation->messages)
+        ];
+    }
+    
+    /**
+     * Format conversations data for response.
+     */
+    private function formatConversationsData($conversations): array
+    {
+        return [
+            'data' => ConversationData::collect($conversations->items()),
+            'current_page' => $conversations->currentPage(),
+            'last_page' => $conversations->lastPage(),
+            'per_page' => $conversations->perPage(),
+            'total' => $conversations->total(),
+            'from' => $conversations->firstItem(),
+            'to' => $conversations->lastItem(),
+        ];
+    }
+    
+    /**
+     * Check if this is a partial request for conversations only.
+     */
+    private function isPartialConversationsRequest(Request $request): bool
+    {
+        $partialData = $request->header('X-Inertia-Partial-Data');
+        return $partialData && in_array('conversations', explode(',', $partialData));
     }
 
     /**

@@ -21,56 +21,58 @@ class MessageController extends Controller
      */
     public function store(Request $request, Conversation $conversation)
     {
-        // Validate the request
         $validated = $request->validate([
             'type' => 'required|in:customer,agent,internal',
             'content' => 'required|string',
         ]);
 
         return DB::transaction(function () use ($validated, $conversation) {
-            // Create the message
-            $message = new Message([
+            $message = Message::create([
                 'conversation_id' => $conversation->getKey(),
                 'type' => $validated['type'],
                 'content' => $validated['content'],
             ]);
 
-            $message->save();
-
-            // Update the conversation's last activity timestamp
-            $conversation->last_activity_at = now();
-            $conversation->save();
-
-            // Send email if this is an agent reply to a customer
-            if ($validated['type'] === 'agent') {
-                try {
-                    // Ensure the message has the conversation relationship loaded
-                    $message->setRelation('conversation', $conversation);
-                    // Also ensure contact is loaded on conversation
-                    if (!$conversation->relationLoaded('contact')) {
-                        $conversation->load('contact');
-                    }
-
-                    $sentEmail = $this->emailService->sendReply($message);
-                } catch (\Exception $e) {
-                    // Load conversation and contact relationships for the DTO
-                    $message->load('conversation.contact');
-                    
-                    return redirect()->back()->with([
-                        'warning' => 'Message sent but email notification failed to send',
-                        'message' => MessageData::fromModel($message),
-                    ]);
-                }
-            }
-
-            // Load conversation and contact relationships for the DTO
+            $conversation->touch('last_activity_at');
+            
+            $emailSent = $this->handleEmailNotification($message, $conversation, $validated['type']);
             $message->load('conversation.contact');
             
-            // Return a redirect response for Inertia
+            $successMessage = 'Message sent successfully';
+            if ($validated['type'] === 'agent') {
+                $successMessage .= $emailSent ? ' and email notification sent' : ' but email notification failed';
+            }
+            
             return redirect()->back()->with([
-                'success' => 'Message sent successfully' . ($validated['type'] === 'agent' ? ' and email notification sent' : ''),
+                $emailSent === false ? 'warning' : 'success' => $successMessage,
                 'message' => MessageData::fromModel($message),
             ]);
         });
+    }
+    
+    /**
+     * Handle email notification for agent messages.
+     */
+    private function handleEmailNotification(Message $message, Conversation $conversation, string $type): ?bool
+    {
+        if ($type !== 'agent') {
+            return null;
+        }
+        
+        try {
+            $message->setRelation('conversation', $conversation);
+            if (!$conversation->relationLoaded('contact')) {
+                $conversation->load('contact');
+            }
+            
+            $this->emailService->sendReply($message);
+            return true;
+        } catch (\Exception $e) {
+            Log::warning('Failed to send email notification for message', [
+                'message_id' => $message->id,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
     }
 }
