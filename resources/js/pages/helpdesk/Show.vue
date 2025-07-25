@@ -185,7 +185,7 @@ const loadMoreConversations = () => {
   isLoadingMore.value = true;
   const nextPage = props.conversations.current_page + 1;
   
-  console.log('Loading page:', nextPage);
+  // Loading next page of conversations
   
   router.get('/helpdesk', {
     page: nextPage,
@@ -197,11 +197,12 @@ const loadMoreConversations = () => {
     preserveUrl: true, // This prevents URL updates
     onSuccess: () => {
       isLoadingMore.value = false;
-      console.log('Successfully loaded page:', nextPage);
+      // Successfully loaded next page
     },
     onError: (error) => {
       isLoadingMore.value = false;
-      console.error('Failed to load more conversations:', error);
+      // Handle error loading more conversations
+      // Consider adding a user-visible error notification here
     }
   });
 };
@@ -212,12 +213,7 @@ watch(() => page.props.conversations, (newConversations, oldConversations) => {
   
   // Check if this is an infinite scroll load (new page > old page)
   if (newConversations.current_page > oldConversations.current_page) {
-    console.log('Merging conversations:', {
-      oldPage: oldConversations.current_page,
-      newPage: newConversations.current_page,
-      oldDataLength: oldConversations.data?.length || 0,
-      newDataLength: newConversations.data?.length || 0
-    });
+    // Merge conversations from new page with existing conversations
     
     // Merge the new conversations with the existing ones
     const existingIds = new Set((oldConversations.data || []).map(c => c.id));
@@ -287,7 +283,8 @@ function navigateToConversationPage(conversation: any) {
     // Mark conversation as read on the server
     markConversationAsRead(conversation.id, {
       onError: (error) => {
-        console.error('Failed to mark conversation as read:', error);
+        // Handle error marking conversation as read
+        // User-visible feedback is handled by reverting the optimistic update
         // Revert optimistic update on error
         if (conversationInList) {
           conversationInList.unread = true;
@@ -303,22 +300,22 @@ function navigateToConversationPage(conversation: any) {
 
 // Event handlers
 function handleMessageSent(data: { type: string; content: string; conversation_id: string }) {
-  console.log('Message sent:', data);
+  // Message sent event received
   // You can add additional logic here if needed
 }
 
 function handleStatusUpdated(data: { status: string; conversation_id: string }) {
-  console.log('Status updated:', data);
+  // Status updated event received
   // You can add additional logic here if needed
 }
 
 function handlePriorityUpdated(data: { priority: string; conversation_id: string }) {
-  console.log('Priority updated:', data);
+  // Priority updated event received
   // You can add additional logic here if needed
 }
 
 function handleConversationUpdated(data: { conversation: App.Data.ConversationData }) {
-  console.log('Conversation updated:', data);
+  // Conversation updated event received
 
   // Find the conversation in the list and update it
   const conversationInList = props.conversations.data.find(c => c.id === data.conversation.id);

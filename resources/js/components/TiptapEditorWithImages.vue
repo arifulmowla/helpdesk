@@ -230,7 +230,8 @@ const handleImageUpload = async (event) => {
       alert('Failed to upload image: ' + (data.message || 'Unknown error'))
     }
   } catch (error) {
-    console.error('Upload error:', error)
+    // Emit error event instead of console.error
+    emit('error', { message: 'Failed to upload image', details: error })
     alert('Failed to upload image. Please try again.')
   } finally {
     uploading.value = false

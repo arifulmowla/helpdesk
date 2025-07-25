@@ -112,13 +112,21 @@ async function submitMessage() {
         editorRef.value.clearContent();
       },
       onError: (errors) => {
-        console.error('Error sending message:', errors);
-        // You could add error handling UI here
+        // Handle errors through UI feedback
+        emit('sent', {
+          type: 'error',
+          content: 'Failed to send message. Please try again.',
+          conversation_id: props.conversationId
+        });
       }
     });
   } catch (error) {
-    console.error('Error sending message:', error);
-    // You could add error handling UI here
+    // Handle unexpected errors through UI feedback
+    emit('sent', {
+      type: 'error',
+      content: 'An unexpected error occurred. Please try again.',
+      conversation_id: props.conversationId
+    });
   }
 }
 </script>

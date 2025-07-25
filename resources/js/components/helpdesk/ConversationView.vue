@@ -348,7 +348,10 @@ function handleSendReply() {
       replyEditor.value?.clearContent();
     },
     onError: (errors) => {
-      console.error('Error sending reply:', errors);
+      emit('error', {
+        message: 'Failed to send reply',
+        details: errors
+      });
     }
   });
 }
@@ -372,7 +375,10 @@ function handleSendInternalNote() {
       internalEditor.value?.clearContent();
     },
     onError: (errors) => {
-      console.error('Error sending internal note:', errors);
+      emit('error', {
+        message: 'Failed to send internal note',
+        details: errors
+      });
     }
   });
 }

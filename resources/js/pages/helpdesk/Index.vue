@@ -176,7 +176,7 @@ const loadMoreConversations = () => {
   isLoadingMore.value = true;
   const nextPage = props.conversations.current_page + 1;
   
-  console.log('Loading page:', nextPage, 'for Index');
+  // Loading next page of conversations for Index
   
   router.get('/helpdesk', {
     page: nextPage
@@ -187,11 +187,12 @@ const loadMoreConversations = () => {
     preserveUrl: true, // This prevents URL updates
     onSuccess: () => {
       isLoadingMore.value = false;
-      console.log('Successfully loaded page:', nextPage, 'for Index');
+      // Successfully loaded next page for Index
     },
     onError: (error) => {
       isLoadingMore.value = false;
-      console.error('Failed to load more conversations:', error);
+      // Handle error loading more conversations
+      // Consider adding a user-visible error notification here
     }
   });
 };
@@ -202,12 +203,7 @@ watch(() => page.props.conversations, (newConversations, oldConversations) => {
   
   // Check if this is an infinite scroll load (new page > old page)
   if (newConversations.current_page > oldConversations.current_page) {
-    console.log('Merging conversations in Index:', {
-      oldPage: oldConversations.current_page,
-      newPage: newConversations.current_page,
-      oldDataLength: oldConversations.data?.length || 0,
-      newDataLength: newConversations.data?.length || 0
-    });
+    // Merge conversations from new page with existing conversations in Index
     
     // Merge the new conversations with the existing ones
     const existingIds = new Set((oldConversations.data || []).map(c => c.id));
@@ -259,7 +255,7 @@ const handleStatusChanged = (data: {
   status: string;
   conversation_id: string;
 }) => {
-  console.log('Status changed:', data);
+  // Status changed event received
   
   // Update the active conversation's status
   if (activeConversation.value && activeConversation.value.id === data.conversation_id) {
@@ -280,7 +276,7 @@ const handlePriorityChanged = (data: {
   priority: string;
   conversation_id: string;
 }) => {
-  console.log('Priority changed:', data);
+  // Priority changed event received
   
   // Update the active conversation's priority
   if (activeConversation.value && activeConversation.value.id === data.conversation_id) {
