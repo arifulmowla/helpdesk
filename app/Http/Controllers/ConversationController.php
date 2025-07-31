@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Data\ConversationData;
 use App\Data\ConversationFilterData;
 use App\Data\MessageData;
+use App\Enums\Priority;
+use App\Enums\Status;
 use App\Filters\ConversationFilter;
 use App\Models\Conversation;
 use App\Models\User;
@@ -42,6 +44,18 @@ class ConversationController extends Controller
                 'options' => ConversationFilterData::create(),
             ],
             'users' => User::select(['id', 'name', 'email'])->get()->toArray(),
+            'statusOptions' => array_map(function ($status) {
+                return [
+                    'value' => $status->value,
+                    'name' => $status->name()
+                ];
+            }, Status::cases()),
+            'priorityOptions' => array_map(function ($priority) {
+                return [
+                    'value' => $priority->value,
+                    'name' => $priority->name()
+                ];
+            }, Priority::cases()),
         ]);
     }
 

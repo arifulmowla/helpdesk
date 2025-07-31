@@ -109,6 +109,8 @@
           class="h-full"
           :conversation="conversation"
           :messages="messages"
+          :statusOptions="statusOptions"
+          :priorityOptions="priorityOptions"
           @message-sent="handleMessageSent"
           @status-updated="handleStatusUpdated"
           @priority-updated="handlePriorityUpdated"
@@ -167,6 +169,14 @@ const props = defineProps<{
     id: string;
     name: string;
     email: string;
+  }>;
+  statusOptions: Array<{
+    value: string;
+    name: string;
+  }>;
+  priorityOptions: Array<{
+    value: string;
+    name: string;
   }>;
 }>();
 
