@@ -73,7 +73,7 @@ class ConversationSeeder extends Seeder
         $conversation = Conversation::create([
             'contact_id' => $contact->id,
             'subject' => 'Need help creating a booking',
-            'status' => 'resolved',
+            'status' => 'open',
             'priority' => 'medium',
             'unread' => false,
             'last_activity_at' => now()->subDays(7),
@@ -107,7 +107,7 @@ class ConversationSeeder extends Seeder
         $conversation = Conversation::create([
             'contact_id' => $contact->id,
             'subject' => 'Cannot reset password on app.crowdbook.com',
-            'status' => 'resolved',
+            'status' => 'open',
             'priority' => 'medium',
             'unread' => false,
             'last_activity_at' => now()->subDays(6),

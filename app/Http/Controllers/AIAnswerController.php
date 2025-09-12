@@ -58,7 +58,7 @@ class AIAnswerController extends Controller
 
             return response()->json([
                 'success' => false,
-                'error' => 'Failed to generate answer. Please try again later.',
+                'error' =>  $e->getMessage(),
             ], 500);
         }
     }

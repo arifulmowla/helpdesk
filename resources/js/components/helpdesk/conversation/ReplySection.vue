@@ -199,8 +199,9 @@ function setReplyContent(content: string) {
 function handleSendReply() {
   if (isReplyEmpty.value) return;
   
-  router.post(route('conversations.reply', { conversation: props.conversation.id }), {
-    content: replyContent.value
+  router.post(route('helpdesk.messages.store', { conversation: props.conversation.id }), {
+    content: replyContent.value,
+    type: 'agent'
   }, {
     preserveScroll: true,
     onSuccess: () => {

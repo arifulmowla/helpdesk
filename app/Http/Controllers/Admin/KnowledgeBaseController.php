@@ -35,7 +35,7 @@ class KnowledgeBaseController extends Controller
         $tagSlug = $request->input('tag');
         $sortBy = $request->input('sort_by', 'updated_at');
         $sortDir = $request->input('sort_dir', 'desc');
-        $status = $request->input('status', 'published'); // published, draft, trashed, all
+        $status = $request->input('status', 'all'); // published, draft, trashed, all
         $perPage = $request->input('per_page', 15);
 
         $query = KnowledgeBaseArticle::with(['tags', 'createdBy', 'updatedBy']);
