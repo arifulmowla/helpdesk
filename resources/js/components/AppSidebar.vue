@@ -12,34 +12,46 @@ import {
     SidebarMenuItem,
     SidebarTrigger
 } from '@/components/ui/sidebar';
+import { computed } from 'vue'
+import { usePage } from '@inertiajs/vue3'
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
 import { BookOpen, Folder, LayoutGrid, HelpCircle, User } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Helpdesk',
-        href: '/helpdesk',
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Knowledge Base',
-        href: '/admin/knowledge-base',
-        icon: HelpCircle,
-    },
-    {
-        title: 'Users',
-        href: '/admin/users',
-        icon: User,
-    },
+const auth = computed(() => usePage().props.auth)
+console.log(auth.value.user);
 
-];
+const mainNavItems = computed(() => {
+    const items: NavItem[] = [
+        {
+            title: 'Dashboard',
+            href: '/dashboard',
+            icon: LayoutGrid,
+        },
+        {
+            title: 'Helpdesk',
+            href: '/helpdesk',
+            icon: LayoutGrid,
+        },
+        {
+            title: 'Knowledge Base',
+            href: '/admin/knowledge-base',
+            icon: HelpCircle,
+        },
+    ]
+
+    // Only add Users menu item if user is admin
+    if (auth.value.user?.role === 'admin') {
+        items.push({
+            title: 'Users',
+            href: '/admin/users',
+            icon: User,
+        })
+    }
+
+    return items
+})
 
 const footerNavItems: NavItem[] = [
     {

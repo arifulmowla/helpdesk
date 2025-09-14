@@ -67,7 +67,7 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
     });
 
        // Admin Knowledge Base routes (requires manage-knowledge-base permission)
-    Route::prefix('admin/users')->group(function () {
+    Route::middleware(['auth:web', 'verified', 'role:admin'])->prefix('admin/users')->group(function () {
         Route::get('/', [App\Http\Controllers\Admin\UserController::class, 'index'])->name('admin.users.index');
         Route::get('/create', [UserController::class, 'create'])->name('admin.users.create');
         Route::post('/', [UserController::class, 'store'])->name('admin.users.store');
