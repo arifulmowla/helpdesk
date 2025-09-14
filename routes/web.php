@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\StatusController;
@@ -64,6 +65,19 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
         Route::delete('/{tag}', [App\Http\Controllers\Admin\TagController::class, 'destroy'])->name('admin.tags.destroy');
         Route::get('/list', [App\Http\Controllers\Admin\TagController::class, 'list'])->name('admin.tags.list');
     });
+
+       // Admin Knowledge Base routes (requires manage-knowledge-base permission)
+    Route::prefix('admin/users')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\UserController::class, 'index'])->name('admin.users.index');
+        Route::get('/create', [UserController::class, 'create'])->name('admin.users.create');
+        Route::post('/', [UserController::class, 'store'])->name('admin.users.store');
+        Route::put('/{user}', [UserController::class, 'update'])->name('admin.users.update');
+        Route::delete('/{user}', [UserController::class, 'destroy'])->name('admin.users.destroy');
+        Route::get('/{user}/role', [UserController::class, 'editRole'])->name('admin.users.role');
+        Route::put('/{user}/role', [UserController::class, 'updateRole'])->name('admin.users.role.update');
+
+    });
+
 
     // AI Answer Generation routes
     Route::prefix('ai')->group(function () {

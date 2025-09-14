@@ -12,21 +12,34 @@ class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasUlids;
-    
+
+    const ROLE_ADMIN = 'admin';
+    const ROLE_AGENT = 'agent';
+
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    public function isAgent(): bool
+    {
+        return $this->role === self::ROLE_AGENT;
+    }
+
     /**
      * The primary key for the model.
      *
      * @var string
      */
     protected $primaryKey = 'id';
-    
+
     /**
      * The "type" of the primary key ID.
      *
      * @var string
      */
     protected $keyType = 'string';
-    
+
     /**
      * Indicates if the IDs are auto-incrementing.
      *
