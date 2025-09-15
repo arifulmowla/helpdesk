@@ -64,9 +64,9 @@
           v-model="status"
           @change="(e) => updateStatus((e.target as HTMLSelectElement).value)"
         >
-          <option 
-            v-for="option in statusOptions" 
-            :key="option.value" 
+          <option
+            v-for="option in statusOptions"
+            :key="option.value"
             :value="option.value"
             :class="getStatusClass(option.value)"
           >
@@ -82,9 +82,9 @@
           v-model="priority"
           @change="(e) => updatePriority((e.target as HTMLSelectElement).value)"
         >
-          <option 
-            v-for="option in priorityOptions" 
-            :key="option.value" 
+          <option
+            v-for="option in priorityOptions"
+            :key="option.value"
             :value="option.value"
             :class="getPriorityClass(option.value)"
           >
@@ -133,10 +133,10 @@ const emit = defineEmits<{
 
 // Refs
 // Handle assigned_to as possibly an array or an object with id
-const assignedTo = Array.isArray(props.conversation.assigned_to) 
-  ? props.conversation.assigned_to[0] 
+const assignedTo = Array.isArray(props.conversation.assigned_to)
+  ? props.conversation.assigned_to[0]
   : props.conversation.assigned_to;
-const selectedUser = ref(assignedTo?.id || '');
+const selectedUser = ref(getInitialAssignee(props.conversation));
 
 // Handle status and priority as arrays
 const statusValue = Array.isArray(props.conversation.status) && props.conversation.status.length > 0
@@ -145,9 +145,11 @@ const statusValue = Array.isArray(props.conversation.status) && props.conversati
 const priorityValue = Array.isArray(props.conversation.priority) && props.conversation.priority.length > 0
   ? props.conversation.priority[0]?.value || ''
   : '';
-  
-const status = ref<string>(statusValue);
-const priority = ref<string>(priorityValue);
+
+const status = ref<string>(getInitialStatus(props.conversation));
+const priority = ref<string>(getInitialPriority(props.conversation));
+
+
 
 // Methods
 function markAsUnread() {
@@ -172,8 +174,8 @@ function assignToUser() {
     },
     onError: () => {
       // Reset the select on error using the same logic as initialization
-      const assignedTo = Array.isArray(props.conversation.assigned_to) 
-        ? props.conversation.assigned_to[0] 
+      const assignedTo = Array.isArray(props.conversation.assigned_to)
+        ? props.conversation.assigned_to[0]
         : props.conversation.assigned_to;
       selectedUser.value = assignedTo?.id || '';
     }
@@ -183,12 +185,12 @@ function assignToUser() {
 function updateStatus(newStatus: string) {
   // Use strict equality check with proper type handling
   if (String(status.value) === String(newStatus)) return;
-  
+
   status.value = newStatus;
-  
+
   // Ensure conversation.id is treated as a string or number, not an array
   const conversationId = String(props.conversation.id);
-  router.post(route('conversations.update-status', { conversation: conversationId }), {
+  router.post(route('helpdesk.status.update', { conversation: conversationId }), {
     status: newStatus
   }, {
     preserveScroll: true,
@@ -209,9 +211,9 @@ function updateStatus(newStatus: string) {
 function updatePriority(newPriority: string) {
   // Use strict equality check with proper type handling
   if (String(priority.value) === String(newPriority)) return;
-  
+
   priority.value = newPriority;
-  
+
   // Ensure conversation.id is treated as a string or number, not an array
   const conversationId = String(props.conversation.id);
   router.post(route('conversations.update-priority', { conversation: conversationId }), {
@@ -235,6 +237,73 @@ function updatePriority(newPriority: string) {
 function generateAIResponse() {
   emit('generate-ai');
 }
+
+
+
+
+
+
+
+
+
+function getInitialStatus(conversation: ConversationDataType): string {
+    // If status is an object with value property, return that value
+    if (conversation.status && typeof conversation.status === 'object' && 'value' in conversation.status) {
+        return conversation.status.value;
+    }
+
+    // If status is directly a string, return it
+    if (typeof conversation.status === 'string') {
+        return conversation.status;
+    }
+
+    // Fallback to empty string if no valid status found
+    return '';
+}
+
+function getInitialPriority(conversation: ConversationDataType): string {
+ if (conversation.priority && typeof conversation.priority === 'object' && 'value' in conversation.priority) {
+        return conversation.priority.value;
+    }
+
+    // If priority is directly a string, return it
+    if (typeof conversation.priority === 'string') {
+        return conversation.priority;
+    }
+
+    // Fallback to empty string if no valid priority found
+    return '';
+}
+
+function getInitialAssignee(conversation: ConversationDataType): string {
+  const assignedTo = Array.isArray(conversation.assigned_to)
+    ? conversation.assigned_to[0]
+    : conversation.assigned_to;
+  return assignedTo?.id || '';
+}
+
+
+// Add watchers to update values when conversation changes
+watch(() => props.conversation, (newConversation) => {
+  status.value = getInitialStatus(newConversation);
+  priority.value = getInitialPriority(newConversation);
+  selectedUser.value = getInitialAssignee(newConversation);
+}, { immediate: true, deep: true });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function getStatusClass(statusValue: string): string {
   switch (statusValue) {
