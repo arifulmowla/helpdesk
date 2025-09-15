@@ -20,7 +20,6 @@ import { BookOpen, Folder, LayoutGrid, HelpCircle, User } from 'lucide-vue-next'
 import AppLogo from './AppLogo.vue';
 
 const auth = computed(() => usePage().props.auth)
-console.log(auth.value.user);
 
 const mainNavItems = computed(() => {
     const items: NavItem[] = [

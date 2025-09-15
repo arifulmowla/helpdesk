@@ -5,6 +5,7 @@ use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\StatusController;
 use App\Http\Controllers\KnowledgeBaseController;
+use App\Http\Controllers\PriorityController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -30,7 +31,8 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
         Route::get('/', [ConversationController::class, 'index'])->name('helpdesk.index');
         Route::get('/{conversation}', [ConversationController::class, 'index'])->name('helpdesk.show');
         Route::post('/{conversation}/messages', [MessageController::class, 'store'])->name('helpdesk.messages.store');
-        Route::post('/{conversation}/status', [StatusController::class, 'update'])->name('helpdesk.status.update');
+        Route::post('/{conversation}/status', [StatusController::class, 'update'])->name('conversation.status.update');
+        Route::post('/{conversation}/priority', [PriorityController::class, 'update'])->name('conversation.priority.update');
         Route::post('/conversations/{conversation}/read', [ConversationController::class, 'markAsRead'])->name('conversations.read');
         Route::post('/conversations/{conversation}/unread', [ConversationController::class, 'markAsUnread'])->name('conversations.unread');
         Route::post('/conversations/{conversation}/assign', [ConversationController::class, 'assign'])->name('conversations.assign');

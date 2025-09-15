@@ -142,6 +142,7 @@ const selectedUser = ref(getInitialAssignee(props.conversation));
 const statusValue = Array.isArray(props.conversation.status) && props.conversation.status.length > 0
   ? props.conversation.status[0]?.value || ''
   : '';
+
 const priorityValue = Array.isArray(props.conversation.priority) && props.conversation.priority.length > 0
   ? props.conversation.priority[0]?.value || ''
   : '';
@@ -159,7 +160,7 @@ function markAsUnread() {
     preserveScroll: true
   });
 }
-
+// Assign to User Method
 function assignToUser() {
   // Ensure conversation.id is treated as a string or number, not an array
   const conversationId = String(props.conversation.id);
@@ -184,19 +185,20 @@ function assignToUser() {
 
 function updateStatus(newStatus: string) {
   // Use strict equality check with proper type handling
-  if (String(status.value) === String(newStatus)) return;
+//   if (String(status.value) === String(newStatus)) return;
 
   status.value = newStatus;
-
+console.log('Updating status to:', newStatus);
   // Ensure conversation.id is treated as a string or number, not an array
   const conversationId = String(props.conversation.id);
-  router.post(route('helpdesk.status.update', { conversation: conversationId }), {
+  router.post(route('conversation.status.update', { conversation: conversationId }), {
     status: newStatus
   }, {
     preserveScroll: true,
     preserveState: true,
     onSuccess: () => {
       emit('status-updated', newStatus);
+      console.log('Status updated successfully');
     },
     onError: () => {
       // Reset on error using the same logic as initialization
@@ -204,19 +206,20 @@ function updateStatus(newStatus: string) {
         ? props.conversation.status[0]?.value || ''
         : '';
       status.value = statusValue;
+      console.error('Failed to update status');
     }
   });
 }
 
 function updatePriority(newPriority: string) {
   // Use strict equality check with proper type handling
-  if (String(priority.value) === String(newPriority)) return;
+//   if (String(priority.value) === String(newPriority)) return;
 
   priority.value = newPriority;
 
   // Ensure conversation.id is treated as a string or number, not an array
   const conversationId = String(props.conversation.id);
-  router.post(route('conversations.update-priority', { conversation: conversationId }), {
+  router.post(route('conversation.priority.update', { conversation: conversationId }), {
     priority: newPriority
   }, {
     preserveScroll: true,
@@ -238,13 +241,7 @@ function generateAIResponse() {
   emit('generate-ai');
 }
 
-
-
-
-
-
-
-
+// Helper functions to get initial values
 
 function getInitialStatus(conversation: ConversationDataType): string {
     // If status is an object with value property, return that value
@@ -290,21 +287,10 @@ watch(() => props.conversation, (newConversation) => {
   selectedUser.value = getInitialAssignee(newConversation);
 }, { immediate: true, deep: true });
 
+// End Helper functions to get initial values
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+// CSS Class Helpers
 function getStatusClass(statusValue: string): string {
   switch (statusValue) {
     case 'open':
@@ -324,6 +310,7 @@ function getStatusClass(statusValue: string): string {
   }
 }
 
+// CSS Class Helpers for Priority
 function getPriorityClass(priorityValue: string): string {
   switch (priorityValue) {
     case 'low':

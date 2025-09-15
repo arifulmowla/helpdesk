@@ -5,31 +5,31 @@ namespace App\Http\Controllers;
 use App\Models\Conversation;
 use Illuminate\Http\Request;
 
-class StatusController extends Controller
+class PriorityController extends Controller
 {
     /**
-     * Update the status of a conversation.
+     * Update the priority of a conversation.
      */
     public function update(Request $request, Conversation $conversation)
     {
 
         // Validate the request
         $validated = $request->validate([
-            'status' => 'required|in:open,closed,awaiting_customer,awaiting_agent,resolved,cancelled'
+            'priority' => 'required|in:low,medium,high,urgent'
         ]);
 
 
-        // Update the conversation status
-        $conversation->status = $validated['status'];
+        // Update the conversation priority
+        $conversation->priority = $validated['priority'];
         $conversation->last_activity_at = now();
         $conversation->save();
 
         // For Inertia requests, return a redirect response
         if ($request->wantsJson()) {
             return redirect()->back()
-                ->with('success', 'Status updated successfully');
+                ->with('success', 'Priority updated successfully');
         }
 
-        return back()->with('success', 'Status updated successfully');
+        return back()->with('success', 'Priority updated successfully');
     }
 }
