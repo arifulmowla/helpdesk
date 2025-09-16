@@ -15,6 +15,7 @@ class User extends Authenticatable
 
     const ROLE_ADMIN = 'admin';
     const ROLE_AGENT = 'agent';
+    const ROLE_CUSTOMER = 'customer';
 
     public function isAdmin(): bool
     {
@@ -56,6 +57,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
 
     /**

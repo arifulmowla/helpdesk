@@ -1,17 +1,17 @@
 <?php
 
+use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\StatusController;
 use App\Http\Controllers\KnowledgeBaseController;
 use App\Http\Controllers\PriorityController;
+use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome');
-})->name('home');
+Route::get('/', [WelcomeController::class, 'index'])->name('home');
 
 // Postmark webhook for inbound emails (no auth required)
 Route::post('/webhooks/postmark/inbound', [App\Http\Controllers\PostmarkWebhookController::class, 'handleInbound'])
@@ -77,7 +77,11 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
         Route::delete('/{user}', [UserController::class, 'destroy'])->name('admin.users.destroy');
         Route::get('/{user}/role', [UserController::class, 'editRole'])->name('admin.users.role');
         Route::put('/{user}/role', [UserController::class, 'updateRole'])->name('admin.users.role.update');
+    });
 
+    // Admin Customer routes (requires admin role)
+    Route::middleware(['auth:web', 'verified', 'role:admin'])->prefix('admin/customers')->group(function () {
+        Route::get('/', [CustomerController::class, 'index'])->name('admin.customers.index');
     });
 
 

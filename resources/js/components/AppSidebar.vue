@@ -16,7 +16,7 @@ import { computed } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, HelpCircle, User } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, HelpCircle, User, Users, TicketCheck, MessageCircle} from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const auth = computed(() => usePage().props.auth)
@@ -46,7 +46,27 @@ const mainNavItems = computed(() => {
             title: 'Users',
             href: '/admin/users',
             icon: User,
-        })
+        },
+    )
+    }
+
+    if (auth.value.user?.role === 'admin' || auth.value.user?.role === 'agent') {
+        items.push({
+            title: 'Customers',
+            href: '/admin/customers',
+            icon: Users,
+        },
+        {
+            title: 'Tickets',
+            href: '/admin/tickets',
+            icon: TicketCheck,
+        },
+        {
+            title: 'Live Chat',
+            href: '/admin/live-chat',
+            icon: MessageCircle,
+        },
+    )
     }
 
     return items

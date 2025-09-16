@@ -11,9 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->enum('role', ['admin', 'agent'])->default('agent');
-        });
+        // Schema::table('users', function (Blueprint $table) {
+        //     $table->enum('role', ['admin', 'agent', 'customer'])->default('customer');
+        // });
+
+         if (!Schema::hasColumn('users', 'role')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->string('role')
+                    ->check("role in ('admin', 'agent', 'customer')")
+                    ->default('customer');
+            });
+        }
     }
 
     /**
